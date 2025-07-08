@@ -1,0 +1,171 @@
+# drm-gfx
+
+A 3D graphics rendering library for the Linux Direct Rendering Manager (DRM). This library provides a lightweight 3D rendering engine that works directly with the DRM interface, without requiring a full graphics stack or window manager.
+
+Or to put it more bluntly:
+I stitched together https://github.com/Kezii/embedded-gfx/tree/master with https://github.com/Smithay/drm-rs/tree/develop without any care and threw it into https://gitlab.com/FLimburg/drm-gfx .
+
+## Features
+
+- 3D mesh rendering with multiple render modes (Points, Lines, Solid, Directional Lighting)
+- Camera with configurable position, target, and field of view
+- Support for transformations and model matrices
+- Backface culling
+- Simple lighting model
+- Direct rendering to DRM framebuffers
+- Double buffering support
+- Performance counters for optimization
+
+## Usage
+
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+drm-gfx = "0.1.0"
+```
+
+### Basic Example
+
+```rust
+use drm_gfx::mesh::K3dMesh;
+use drm_gfx::{
+    draw::draw,
+    mesh::Geometry,
+    perfcounter::PerformanceCounter,
+    K3dengine,
+    doublebuffer::DoubleBuffer,
+    drm_render_target::RenderTarget,
+};
+use embedded_graphics::Drawable;
+use embedded_graphics::{
+    geometry::Point,
+    mono_font::{ascii::FONT_6X10, MonoTextStyle},
+    text::Text,
+};
+use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
+use nalgebra::Point3;
+use std::f32::consts::PI;
+use std::ffi::c_void;
+
+mod locs;
+// TODO: make this run time
+// this needs to fit with the output from display creation
+const WIDTH: usize = 1024;
+const HEIGHT: usize = 600;
+
+
+#[tokio::main]
+async fn main() {
+    println!("Hello, world!");
+    let locs = Vec![[-1,0,0],[1,0,0],[0,1,0]];
+    // card1 is used for the rasperry pi hdmi port
+    let display = RenderTarget::new("/dev/dri/card1");
+
+    let mut locations = K3dMesh::new(Geometry{
+        vertices: &locs,
+        faces: &[],
+        colors: &[],
+        lines: &[],
+        normals: &[],
+    });
+    locations.set_color(Bgr888::CSS_GREEN);
+
+    let mut raw_framebuffer_0 = Box::new([0u32; WIDTH * HEIGHT]);
+    let mut raw_framebuffer_1 = Box::new([0u32; WIDTH * HEIGHT]);
+
+    let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
+        raw_framebuffer_0.as_mut_ptr() as *mut c_void,
+        raw_framebuffer_1.as_mut_ptr() as *mut c_void,
+    );
+
+    buffers.start_thread(display);
+
+    let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
+
+    let mut engine = K3dengine::new(WIDTH as u16, HEIGHT as u16);
+    engine.camera.set_position(Point3::new(0.0, 0.0, -4.0));
+    engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
+    engine.camera.set_fovy(PI / 4.0);
+
+    let mut perf = PerformanceCounter::new();
+    // perf.only_fps(true);
+
+    // TODO: get Render loop and framebuffer into lib
+    println!("Starting render loop ... ");
+    loop {
+        let fbuf = buffers.swap_framebuffer();
+
+        perf.start_of_frame();
+
+        engine.render([&locations], |p| draw(p, fbuf));
+        perf.add_measurement("render");
+
+        Text::new(perf.get_text(), Point::new(20, 20), text_style)
+            .draw(fbuf)
+            .unwrap();
+
+        buffers.send_framebuffer();
+        perf.add_measurement("draw");
+
+        perf.print();
+    }
+
+    println!("all done. Last perf: {}", perf.get_text());
+}
+```
+
+## Supported Render Modes
+
+- **Points**: Renders just the vertices as points
+- **Lines**: Renders edges of the mesh as lines
+- **Solid**: Renders filled triangles with backface culling
+- **SolidLightDir**: Adds directional lighting to solid rendering
+
+## Dependencies
+
+- `embedded-graphics-core`: For pixel color representation
+- `nalgebra`: For matrix math and transformations
+- `line_drawing`: For line rasterization
+- `drm`: For interfacing with the Direct Rendering Manager
+
+## Performance
+
+The library includes performance counters that can be used to measure rendering time and optimize your application.
+
+```rust
+use drm_gfx::perfcounter::PerfCounter;
+
+let mut perf = PerfCounter::new();
+perf.start();
+// Perform rendering
+perf.end();
+println!("Rendering took {} ms", perf.elapsed_ms());
+```
+
+## Framebuffer Optimization
+
+For improved performance, the library supports double buffering:
+
+```rust
+use drm_gfx::doublebuffer::DoubleBuffer;
+
+let mut buffer = DoubleBuffer::new(width, height);
+
+// In your render loop:
+buffer.swap();
+let framebuffer = buffer.get_front();
+```
+
+## License
+
+Licensed under either of
+
+ * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you shall be dual licensed as above, without any additional terms or conditions.
