@@ -39,6 +39,13 @@ impl Camera {
         self.update_view();
     }
 
+    pub fn set_near_far(&mut self, near: f32, far: f32) {
+        self.near = near;
+        self.far = far;
+
+        self.update_projection();
+    }
+
     pub fn set_fovy(&mut self, fovy: f32) {
         self.fov = fovy;
 
