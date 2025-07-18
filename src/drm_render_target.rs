@@ -3,6 +3,7 @@ use drm::control::{framebuffer, Device as ControlDevice, dumbbuffer::DumbBuffer}
 // use drm::{buffer, Device};
 use drm::buffer::{Buffer, DrmFourcc};
 use drm::control::{connector, crtc, Mode};
+use log::{trace, debug};
 use crate::card::Card;
 // use anyhow::Result;
 
@@ -94,9 +95,9 @@ impl RenderTarget {
             .add_framebuffer(&db, 24, 32)
             .expect("Could not create FB");
 
-        // println!("{:#?}", mode);
-        // println!("{:#?}", fb);
-        // println!("{:#?}", db);
+        debug!("mode: {:#?}", mode);
+        trace!("frame buffer handle:{:#?}", fb);
+        debug!("dumb buffer{:#?}", db);
 
         // Set the crtc
         // On many setups, this requires root access.
@@ -117,7 +118,7 @@ impl RenderTarget {
     }
 
     pub fn destroy(&self) {
-        // Destroy the framebuffer
+        debug!("Destroy the framebuffer");
         self.card.destroy_framebuffer(self.fb).unwrap();
         self.card.destroy_dumb_buffer(self.db).unwrap();
     }
