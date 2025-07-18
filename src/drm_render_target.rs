@@ -121,6 +121,14 @@ impl RenderTarget {
         self.card.destroy_framebuffer(self.fb).unwrap();
         self.card.destroy_dumb_buffer(self.db).unwrap();
     }
+
+    pub fn get_info(&self) -> String {
+        format!(
+            "RenderTarget details:  mode: {:#?} -- buffer: {:#?}",
+            self.mode,
+            self.db,
+        )
+    }
 }
 
 #[derive(Debug)]
