@@ -94,10 +94,9 @@ impl RenderTarget {
             .add_framebuffer(&db, 24, 32)
             .expect("Could not create FB");
 
-        println!("{:#?}", mode);
-        println!("{:#?}", fb);
-        println!("{:#?}", db);
-
+        // println!("{:#?}", mode);
+        // println!("{:#?}", fb);
+        // println!("{:#?}", db);
 
         // Set the crtc
         // On many setups, this requires root access.
