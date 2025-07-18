@@ -15,7 +15,7 @@ keywords = [
 
 [dependencies]
 embedded-graphics-core = "0.4.0"
-log = "0.4.20"
-nalgebra = {version = "0.32.3", default-features = false, features = [ "libm" ] }
-line_drawing = "1.0.0"
+log = "0.4.27"
+nalgebra = {version = "0.33.2", default-features = false, features = [ "libm" ] }
+line_drawing = "1.0.1"
 drm = "0.14.1"
