@@ -1,6 +1,6 @@
 // #![allow(dead_code)]
-use drm::control::Device as ControlDevice;
 use drm::Device;
+use drm::control::Device as ControlDevice;
 // use drm::buffer::DrmFourcc;
 // use drm::control::{connector, crtc};
 

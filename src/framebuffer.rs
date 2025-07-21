@@ -1,7 +1,7 @@
 use embedded_graphics_core::{
     draw_target::DrawTarget,
     geometry::{OriginDimensions, Point},
-    pixelcolor::{IntoStorage, Bgr888},
+    pixelcolor::{Bgr888, IntoStorage},
 };
 
 pub struct DmaReadyFramebuffer<const W: usize, const H: usize> {

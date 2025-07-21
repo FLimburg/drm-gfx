@@ -44,7 +44,7 @@ impl PerformanceCounter {
         }
         let now = std::time::Instant::now();
         let ms = (now - self.old_point).as_micros();
-        self.text += &format!("{}: {}\n", label, ms);
+        self.text += &format!("{label}: {ms}\n");
         self.old_point = now;
     }
 

@@ -9,13 +9,13 @@ use nalgebra::Point3;
 use nalgebra::Vector3;
 
 pub mod camera;
+mod card;
+pub mod doublebuffer;
 pub mod draw;
+pub mod drm_render_target;
 pub mod framebuffer;
 pub mod mesh;
 pub mod perfcounter;
-pub mod drm_render_target;
-pub mod doublebuffer;
-mod card;
 
 #[derive(Debug)]
 pub enum DrawPrimitive {
