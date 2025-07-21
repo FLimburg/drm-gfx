@@ -25,6 +25,10 @@ Add this to your `Cargo.toml`:
 drm-gfx = "0.1.0"
 ```
 
+### features
+
+use feature tokio-thread to use drm-gfx in a tokio based application
+
 ### Basic Example
 
 ```rust
