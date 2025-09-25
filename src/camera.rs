@@ -33,28 +33,29 @@ impl Camera {
         ret
     }
 
-    pub fn set_position(&mut self, pos: Point3<f32>) {
+    pub fn set_position(&mut self, pos: Point3<f32>) -> &Self {
         self.position = pos;
 
         self.update_view();
+        self
     }
 
-    pub fn set_near_far(&mut self, near: f32, far: f32) {
+    pub fn set_near_far(&mut self, near: f32, far: f32) -> &Self {
         self.near = near;
         self.far = far;
 
-        self.update_projection();
+        self.update_projection()
     }
 
-    pub fn set_fovy(&mut self, fovy: f32) {
+    pub fn set_fovy(&mut self, fovy: f32) -> &Self {
         self.fov = fovy;
 
-        self.update_projection();
+        self.update_projection()
     }
 
-    pub fn set_target(&mut self, target: Point3<f32>) {
+    pub fn set_target(&mut self, target: Point3<f32>) -> &Self {
         self.target = target;
-        self.update_view();
+        self.update_view()
     }
 
     pub fn get_direction(&self) -> Vector3<f32> {
@@ -63,16 +64,18 @@ impl Camera {
         Vector3::new(transpose[(2, 0)], transpose[(2, 1)], transpose[(2, 2)])
     }
 
-    fn update_view(&mut self) {
+    fn update_view(&mut self) -> &Self {
         let view = Isometry3::look_at_rh(&self.position, &self.target, &Vector3::y());
 
         self.view_matrix = view.to_homogeneous();
         self.vp_matrix = self.projection_matrix * self.view_matrix;
+        self
     }
 
-    fn update_projection(&mut self) {
+    fn update_projection(&mut self) -> &Self {
         let projection = Perspective3::new(self.aspect_ratio, self.fov, self.near, self.far);
         self.projection_matrix = projection.to_homogeneous();
         self.vp_matrix = self.projection_matrix * self.view_matrix;
+        self
     }
 }

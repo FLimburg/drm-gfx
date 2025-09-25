@@ -2,7 +2,7 @@ use crate::{
     drm_render_target::{FramebufferTarget, RenderTarget},
     framebuffer::DmaReadyFramebuffer,
 };
-use log::info;
+use log::{debug, error, trace, info};
 use std::{
     ffi::c_void,
     sync::{Arc, Mutex},
@@ -21,6 +21,7 @@ pub struct DoubleBuffer<const W: usize, const H: usize> {
 
 impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
     pub fn new(raw_framebuffer_0: *mut c_void, raw_framebuffer_1: *mut c_void) -> Self {
+        trace!("Creating new DoubleBuffer with raw framebuffers");
         let fbuf0 = DmaReadyFramebuffer::<W, H>::new(raw_framebuffer_0, true);
         let fbuf1 = DmaReadyFramebuffer::<W, H>::new(raw_framebuffer_1, true);
 
@@ -47,9 +48,10 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
 
         #[cfg(not(feature = "tokio"))]
         std::thread::spawn(move || {
+            debug!("Framebuffer writer thread started for std runtime");
             loop {
                 let ptr = receive.recv().unwrap();
-                // println!("Received framebuffer pointer: {}", ptr);
+                trace!("Received framebuffer pointer: {}", ptr);
                 unsafe {
                     let _lock = mutex2.lock().unwrap();
 
@@ -64,21 +66,25 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
 
         #[cfg(feature = "tokio")]
         tokio::spawn(async move {
-            let ptr = receive.recv().await.unwrap();
-            // println!("Received framebuffer pointer: {}", ptr);
-            unsafe {
-                let _lock = mutex2.lock().unwrap();
+            debug!("Framebuffer writer thread started for tokio runtime");
+            loop {
+                let ptr = receive.recv().await.unwrap();
+                trace!("Received framebuffer pointer: {}", ptr);
+                unsafe {
+                    let _lock = mutex2.lock().unwrap();
 
-                let ptr = ptr as *mut [u32; 1024 * 600];
-                let ptr = &mut *ptr;
+                    let ptr = ptr as *mut [u32; 1024 * 600];
+                    let ptr = &mut *ptr;
 
-                display.eat_framebuffer(ptr).unwrap();
-                ptr.fill(0); // 2.2ms
-            };
+                    display.eat_framebuffer(ptr).unwrap();
+                    ptr.fill(0); // 2.2ms
+                };
+            }
         });
     }
 
     pub fn swap_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<W, H> {
+        trace!("Swapping framebuffer from {}", self.toggle);
         self.toggle = !self.toggle;
 
         if self.toggle {
@@ -96,31 +102,44 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
 
         let fbuf = if self.toggle {
+            trace!("sending framebuffer 0 ({})", self.fbuf0.framebuffer as usize);
             &mut self.fbuf0
         } else {
+            trace!("sending framebuffer 1 ({})", self.fbuf1.framebuffer as usize);
             &mut self.fbuf1
         };
 
         if let Some(sender) = &self.sender {
-            sender.send(fbuf.framebuffer as usize).unwrap();
+            sender.send(fbuf.framebuffer as usize)
+                .inspect_err(|msg| {
+                    error!("Failed to send framebuffer: {}", msg);
+                })
+                .unwrap();
         }
     }
 
     #[cfg(feature = "tokio")]
     pub async fn send_framebuffer(&mut self) {
+        trace!("Sending framebuffer in async context");
         {
             let _lock = self.mutex.lock().unwrap();
             std::mem::drop(_lock);
         }
 
         let fbuf = if self.toggle {
+            trace!("sending framebuffer 0 ({})", self.fbuf0.framebuffer as usize);
             &mut self.fbuf0
         } else {
+            trace!("sending framebuffer 1 ({})", self.fbuf1.framebuffer as usize);
             &mut self.fbuf1
         };
 
         if let Some(sender) = &self.sender {
-            sender.send(fbuf.framebuffer as usize).await.unwrap();
+            sender.send(fbuf.framebuffer as usize).await
+                .inspect_err(|msg| {
+                    error!("Failed to send framebuffer: {}", msg);
+                })
+                .unwrap();
         }
     }
 }
