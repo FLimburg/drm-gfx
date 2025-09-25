@@ -3,23 +3,35 @@
 # https://hub.docker.com/r/library/rust/tags/
 image: "rust:latest"
 
-stages:
-  - test
+variables:
+  # Cache Cargo data to speed up builds
+  CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
+  # Treat warnings as errors
+  RUSTFLAGS: -Dwarnings
 
+default:
+  interruptible: true
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .cargo
+      - target
 
-# Use cargo clippy and fmt to lint the project
-linting:
-  stage: test
+# Run format check in parallel
+cargo:fmt:
   script:
-    - rustc --version && cargo --version  # Print version info for debugging
-    - cargo install clippy
-    - cargo install rustfmt
-    - cargo clippy
+    - rustup component add rustfmt
     - cargo fmt --check
 
+# Run clippy linter
+cargo:clippy:
+  script:
+    - rustup component add clippy
+    - cargo clippy --all-targets
+
 # Use cargo to test the project
-testing:
-  stage: test
+cargo:test:
+  needs: ["cargo:clippy"]
   script:
     - rustc --version && cargo --version  # Print version info for debugging
     - cargo test --workspace --verbose
