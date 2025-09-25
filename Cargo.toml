@@ -23,3 +23,6 @@ tokio = { version = "1.47.1", features = ["full"], optional = true }
 
 [features]
 tokio-threads = ["tokio"]
+
+[dev-dependencies]
+approx = "0.5.1"
