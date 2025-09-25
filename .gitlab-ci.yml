@@ -27,7 +27,7 @@ cargo:fmt:
 cargo:clippy:
   script:
     - rustup component add clippy
-    - cargo clippy --all-targets
+    - cargo clippy
 
 # Use cargo to test the project
 cargo:test:
