@@ -202,7 +202,8 @@ mod tests {
                     && point.y < self.height as i32
                 {
                     self.pixels[point.y as usize][point.x as usize] = Some(color);
-                    self.draw_calls.push(format!("Pixel at ({}, {}) = {:?}", point.x, point.y, color));
+                    self.draw_calls
+                        .push(format!("Pixel at ({}, {}) = {:?}", point.x, point.y, color));
                 }
             }
             Ok(())
@@ -214,7 +215,8 @@ mod tests {
                     self.pixels[y][x] = Some(color);
                 }
             }
-            self.draw_calls.push(format!("Clear with color {:?}", color));
+            self.draw_calls
+                .push(format!("Clear with color {:?}", color));
             Ok(())
         }
     }
@@ -275,9 +277,9 @@ mod tests {
     #[test]
     fn test_fill_bottom_flat_triangle() {
         let mut fb = MockFrameBuffer::new(100, 100);
-        let p1 = embedded_graphics_core::geometry::Point::new(50, 10);  // Top point
-        let p2 = embedded_graphics_core::geometry::Point::new(30, 50);  // Bottom-left point
-        let p3 = embedded_graphics_core::geometry::Point::new(70, 50);  // Bottom-right point
+        let p1 = embedded_graphics_core::geometry::Point::new(50, 10); // Top point
+        let p2 = embedded_graphics_core::geometry::Point::new(30, 50); // Bottom-left point
+        let p3 = embedded_graphics_core::geometry::Point::new(70, 50); // Bottom-right point
         let color = Bgr888::new(255, 127, 63);
 
         fill_bottom_flat_triangle(p1, p2, p3, color, &mut fb);
@@ -295,9 +297,9 @@ mod tests {
     #[test]
     fn test_fill_top_flat_triangle() {
         let mut fb = MockFrameBuffer::new(100, 100);
-        let p1 = embedded_graphics_core::geometry::Point::new(30, 10);  // Top-left point
-        let p2 = embedded_graphics_core::geometry::Point::new(70, 10);  // Top-right point
-        let p3 = embedded_graphics_core::geometry::Point::new(50, 50);  // Bottom point
+        let p1 = embedded_graphics_core::geometry::Point::new(30, 10); // Top-left point
+        let p2 = embedded_graphics_core::geometry::Point::new(70, 10); // Top-right point
+        let p3 = embedded_graphics_core::geometry::Point::new(50, 50); // Bottom point
         let color = Bgr888::new(255, 127, 63);
 
         fill_top_flat_triangle(p1, p2, p3, color, &mut fb);
@@ -316,9 +318,9 @@ mod tests {
     fn test_draw_colored_triangle() {
         let mut fb = MockFrameBuffer::new(100, 100);
         let vertices = [
-            Point2::new(50, 10),   // Top point
-            Point2::new(30, 70),   // Bottom-left point
-            Point2::new(70, 70),   // Bottom-right point
+            Point2::new(50, 10), // Top point
+            Point2::new(30, 70), // Bottom-left point
+            Point2::new(70, 70), // Bottom-right point
         ];
         let color = Bgr888::new(255, 127, 63);
 
@@ -340,9 +342,9 @@ mod tests {
     fn test_draw_colored_triangle_flat_top() {
         let mut fb = MockFrameBuffer::new(100, 100);
         let vertices = [
-            Point2::new(30, 10),   // Top-left point
-            Point2::new(70, 10),   // Top-right point
-            Point2::new(50, 70),   // Bottom point
+            Point2::new(30, 10), // Top-left point
+            Point2::new(70, 10), // Top-right point
+            Point2::new(50, 70), // Bottom point
         ];
         let color = Bgr888::new(255, 127, 63);
 
@@ -361,9 +363,9 @@ mod tests {
     fn test_draw_colored_triangle_flat_bottom() {
         let mut fb = MockFrameBuffer::new(100, 100);
         let vertices = [
-            Point2::new(50, 10),   // Top point
-            Point2::new(30, 70),   // Bottom-left point
-            Point2::new(70, 70),   // Bottom-right point
+            Point2::new(50, 10), // Top point
+            Point2::new(30, 70), // Bottom-left point
+            Point2::new(70, 70), // Bottom-right point
         ];
         let color = Bgr888::new(255, 127, 63);
 
@@ -382,9 +384,9 @@ mod tests {
     fn test_draw_colored_triangle_general_case() {
         let mut fb = MockFrameBuffer::new(100, 100);
         let vertices = [
-            Point2::new(20, 20),   // Top point
-            Point2::new(40, 60),   // Middle point
-            Point2::new(80, 40),   // Bottom point
+            Point2::new(20, 20), // Top point
+            Point2::new(40, 60), // Middle point
+            Point2::new(80, 40), // Bottom point
         ];
         let color = Bgr888::new(255, 127, 63);
 

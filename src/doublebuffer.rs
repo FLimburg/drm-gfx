@@ -2,7 +2,7 @@ use crate::{
     drm_render_target::{FramebufferTarget, RenderTarget},
     framebuffer::DmaReadyFramebuffer,
 };
-use log::{debug, error, trace, info};
+use log::{debug, error, info, trace};
 use std::{
     ffi::c_void,
     sync::{Arc, Mutex},
@@ -51,7 +51,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
             debug!("Framebuffer writer thread started for std runtime");
             loop {
                 let ptr = receive.recv().unwrap();
-                trace!("Received framebuffer pointer: {}", ptr);
+                trace!("Received framebuffer pointer: {ptr}");
                 unsafe {
                     let _lock = mutex2.lock().unwrap();
 
@@ -102,17 +102,24 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
 
         let fbuf = if self.toggle {
-            trace!("sending framebuffer 0 ({})", self.fbuf0.framebuffer as usize);
+            trace!(
+                "sending framebuffer 0 ({})",
+                self.fbuf0.framebuffer as usize
+            );
             &mut self.fbuf0
         } else {
-            trace!("sending framebuffer 1 ({})", self.fbuf1.framebuffer as usize);
+            trace!(
+                "sending framebuffer 1 ({})",
+                self.fbuf1.framebuffer as usize
+            );
             &mut self.fbuf1
         };
 
         if let Some(sender) = &self.sender {
-            sender.send(fbuf.framebuffer as usize)
+            sender
+                .send(fbuf.framebuffer as usize)
                 .inspect_err(|msg| {
-                    error!("Failed to send framebuffer: {}", msg);
+                    error!("Failed to send framebuffer: {msg}");
                 })
                 .unwrap();
         }
@@ -127,15 +134,23 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
 
         let fbuf = if self.toggle {
-            trace!("sending framebuffer 0 ({})", self.fbuf0.framebuffer as usize);
+            trace!(
+                "sending framebuffer 0 ({})",
+                self.fbuf0.framebuffer as usize
+            );
             &mut self.fbuf0
         } else {
-            trace!("sending framebuffer 1 ({})", self.fbuf1.framebuffer as usize);
+            trace!(
+                "sending framebuffer 1 ({})",
+                self.fbuf1.framebuffer as usize
+            );
             &mut self.fbuf1
         };
 
         if let Some(sender) = &self.sender {
-            sender.send(fbuf.framebuffer as usize).await
+            sender
+                .send(fbuf.framebuffer as usize)
+                .await
                 .inspect_err(|msg| {
                     error!("Failed to send framebuffer: {}", msg);
                 })
