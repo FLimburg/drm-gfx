@@ -242,7 +242,7 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
         mesh.set_color(Bgr888::WHITE);
         mesh
@@ -253,12 +253,12 @@ mod tests {
         let width = 800;
         let height = 600;
         let engine = K3dengine::new(width, height);
-        
+
         assert_eq!(engine.width, width);
         assert_eq!(engine.height, height);
         // We can't test aspect_ratio directly as it's private, but we know it's used internally
     }
-    
+
     #[test]
     fn test_transform_point_in_view() {
         // Set up a camera and view matrix to see a point in front
@@ -266,54 +266,57 @@ mod tests {
         // Move camera back to see the point at origin
         camera.set_position(Point3::new(0.0, 0.0, 5.0));
         camera.set_target(Point3::new(0.0, 0.0, 0.0));
-        
+
         let engine = K3dengine {
             camera,
             width: 800,
             height: 600,
         };
-        
+
         // Point at origin
         let point = [0.0, 0.0, 0.0];
-        
+
         // We need to include the camera's view matrix in our transformation
         let result = engine.transform_point(&point, Matrix4::identity());
-        
+
         if result.is_none() {
             // If test fails, print debug info
             println!("Transform returned None for point in view");
             println!("Camera position: {:?}", engine.camera.position);
-            println!("Camera near: {}, far: {}", engine.camera.near, engine.camera.far);
+            println!(
+                "Camera near: {}, far: {}",
+                engine.camera.near, engine.camera.far
+            );
         }
-        
+
         // Skip strict assertion for now since view matrix calculation is complex
         // and we need to focus on the main functionality
     }
-    
+
     #[test]
     fn test_transform_point_behind_camera() {
         // For this test, we'll skip the strict assertion and just check that
         // the engine handles the case gracefully without crashing
         let engine = K3dengine::new(800, 600);
-        
+
         // Try a point that's either behind or in front
         let point = [0.0, 0.0, 100.0];
         let _result = engine.transform_point(&point, Matrix4::identity());
-        
+
         // Just ensure the function runs without crashing
         // Whether the point is visible depends on the camera setup
     }
-    
+
     #[test]
     fn test_transform_point_outside_frustum() {
         let engine = K3dengine::new(800, 600);
-        
+
         // Point outside the near/far planes
         let point = [0.0, 0.0, -100.0]; // Too far
         let identity_matrix = Matrix4::identity();
-        
+
         let result = engine.transform_point(&point, identity_matrix);
-        
+
         // Point should not be transformed (outside frustum)
         assert!(result.is_none());
     }
@@ -325,172 +328,172 @@ mod tests {
         // Move camera back to see the points
         camera.set_position(Point3::new(0.0, 0.0, 5.0));
         camera.set_target(Point3::new(0.0, 0.0, 0.0));
-        
+
         let engine = K3dengine {
             camera,
             width: 800,
             height: 600,
         };
-        
+
         // Create points in front of the camera
         let vertices = [
-            [0.0, 0.0, 0.0],   // Center
-            [1.0, 0.0, 0.0],   // Right
-            [0.0, 1.0, 0.0],   // Up
+            [0.0, 0.0, 0.0], // Center
+            [1.0, 0.0, 0.0], // Right
+            [0.0, 1.0, 0.0], // Up
         ];
-        
+
         let indices = [0, 1, 2];
-        
+
         // Try transforming the points
         let _result = engine.transform_points(&indices, &vertices, Matrix4::identity());
-        
+
         // Skip strict assertions since the camera matrix calculations are complex
         // and we're just testing that the code runs without crashing
     }
-    
+
     #[test]
     fn test_render_points_mode() {
         let engine = K3dengine::new(800, 600);
-        
+
         // Create a test mesh with points render mode
         let mut mesh = create_test_mesh();
         mesh.set_render_mode(RenderMode::Points);
-        
+
         // Position mesh in front of camera
         mesh.set_position(0.0, 0.0, -5.0);
-        
+
         // Collect rendered primitives
         let mut primitives = Vec::new();
         engine.render(std::iter::once(&mesh), |primitive| {
             primitives.push(primitive);
         });
-        
+
         // Should render 3 points (one for each vertex)
         assert_eq!(primitives.len(), 3);
-        
+
         // Check that all primitives are points
         for primitive in primitives {
             match primitive {
                 DrawPrimitive::ColoredPoint(_, color) => {
                     assert_eq!(color, Bgr888::WHITE);
-                },
+                }
                 _ => panic!("Expected ColoredPoint primitive"),
             }
         }
     }
-    
+
     #[test]
     fn test_render_lines_mode() {
         let engine = K3dengine::new(800, 600);
-        
+
         // Create a test mesh with lines render mode
         let mut mesh = create_test_mesh();
         mesh.set_render_mode(RenderMode::Lines);
-        
+
         // Position mesh in front of camera
         mesh.set_position(0.0, 0.0, -5.0);
-        
+
         // Collect rendered primitives
         let mut primitives = Vec::new();
         engine.render(std::iter::once(&mesh), |primitive| {
             primitives.push(primitive);
         });
-        
+
         // Should render lines for the triangle (3 lines)
         assert_eq!(primitives.len(), 3);
-        
+
         // Check that all primitives are lines
         for primitive in primitives {
             match primitive {
                 DrawPrimitive::Line(_, color) => {
                     assert_eq!(color, Bgr888::WHITE);
-                },
+                }
                 _ => panic!("Expected Line primitive"),
             }
         }
     }
-    
+
     #[test]
     fn test_render_solid_mode() {
         let engine = K3dengine::new(800, 600);
-        
+
         // Create a test mesh with solid render mode
         let mut mesh = create_test_mesh();
         mesh.set_render_mode(RenderMode::Solid);
-        
+
         // Position mesh in front of camera
         mesh.set_position(0.0, 0.0, -5.0);
-        
+
         // Collect rendered primitives
         let mut primitives = Vec::new();
         engine.render(std::iter::once(&mesh), |primitive| {
             primitives.push(primitive);
         });
-        
+
         // Should render 1 triangle
         assert_eq!(primitives.len(), 1);
-        
+
         // Check that all primitives are triangles
         for primitive in primitives {
             match primitive {
                 DrawPrimitive::ColoredTriangle(_, color) => {
                     assert_eq!(color, Bgr888::WHITE);
-                },
+                }
                 _ => panic!("Expected ColoredTriangle primitive"),
             }
         }
     }
-    
+
     #[test]
     fn test_render_solid_light_mode() {
         let engine = K3dengine::new(800, 600);
-        
+
         // Create a test mesh with solid light render mode
         let mut mesh = create_test_mesh();
         let light_dir = Vector3::new(0.0, 0.0, 1.0);
         mesh.set_render_mode(RenderMode::SolidLightDir(light_dir));
-        
+
         // Position mesh in front of camera
         mesh.set_position(0.0, 0.0, -5.0);
-        
+
         // Collect rendered primitives
         let mut primitives = Vec::new();
         engine.render(std::iter::once(&mesh), |primitive| {
             primitives.push(primitive);
         });
-        
+
         // Should render 1 triangle
         assert_eq!(primitives.len(), 1);
-        
+
         // Check that all primitives are triangles
         for primitive in primitives {
             match primitive {
                 DrawPrimitive::ColoredTriangle(_, _) => {
                     // Color will be affected by lighting, so we don't check exact value
-                },
+                }
                 _ => panic!("Expected ColoredTriangle primitive"),
             }
         }
     }
-    
+
     #[test]
     fn test_render_backface_culling() {
         let mut engine = K3dengine::new(800, 600);
-        
+
         // Move camera to a position where we can see the mesh
         engine.camera.set_position(Point3::new(0.0, 0.0, 5.0));
         engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
-        
+
         // Create a test mesh with a normal that points away from camera
-        // When camera is at (0,0,5) looking at (0,0,0), normals facing 
+        // When camera is at (0,0,5) looking at (0,0,0), normals facing
         // away from the camera would be pointing in negative z direction
         let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
         let faces = &[[0, 1, 2]];
         let colors = &[];
         let lines = &[];
         // Normal pointing in negative z (away from camera)
-        let normals = &[[0.0, 0.0, -1.0]]; 
-        
+        let normals = &[[0.0, 0.0, -1.0]];
+
         let geometry = Geometry {
             vertices,
             faces,
@@ -498,10 +501,10 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
         mesh.set_render_mode(RenderMode::Solid);
-        
+
         // Let's skip asserting the exact number of primitives since the actual
         // backface culling depends on the camera matrix calculations which
         // are complex. Instead, we just verify the code runs without crashing.
@@ -510,21 +513,21 @@ mod tests {
             primitives.push(primitive);
         });
     }
-    
+
     #[test]
     fn test_render_with_vertex_colors() {
         let engine = K3dengine::new(800, 600);
-        
+
         // Create a test mesh with vertex colors
         let vertices = &[[0.0, 0.0, -5.0], [1.0, 0.0, -5.0], [0.0, 1.0, -5.0]];
         let faces = &[[0, 1, 2]];
-        let red = Bgr888::new(0, 0, 255);    // RGB to BGR conversion (red is 0, 0, 255 in BGR)
-        let green = Bgr888::new(0, 255, 0);  // Green stays the same in BGR
-        let blue = Bgr888::new(255, 0, 0);   // RGB to BGR conversion (blue is 255, 0, 0 in BGR)
+        let red = Bgr888::new(0, 0, 255); // RGB to BGR conversion (red is 0, 0, 255 in BGR)
+        let green = Bgr888::new(0, 255, 0); // Green stays the same in BGR
+        let blue = Bgr888::new(255, 0, 0); // RGB to BGR conversion (blue is 255, 0, 0 in BGR)
         let colors = &[red, green, blue];
         let lines = &[];
         let normals = &[];
-        
+
         let geometry = Geometry {
             vertices,
             faces,
@@ -532,30 +535,30 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
         mesh.set_render_mode(RenderMode::Points);
-        
+
         // Collect rendered primitives
         let mut primitives = Vec::new();
         engine.render(std::iter::once(&mesh), |primitive| {
             primitives.push(primitive);
         });
-        
+
         // Should render 3 points with different colors
         assert_eq!(primitives.len(), 3);
-        
+
         // Extract colors from primitives
         let mut colors = Vec::new();
         for primitive in primitives {
             match primitive {
                 DrawPrimitive::ColoredPoint(_, color) => {
                     colors.push(color);
-                },
+                }
                 _ => panic!("Expected ColoredPoint primitive"),
             }
         }
-        
+
         // Check that all three colors are present
         assert!(colors.contains(&red));
         assert!(colors.contains(&green));

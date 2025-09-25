@@ -164,115 +164,115 @@ mod tests {
     use super::*;
     use std::ffi::c_void;
     use std::mem::MaybeUninit;
-    
+
     // Note: We considered creating a MockRenderTarget for testing, but since we're not
-    // testing the start_thread and send_framebuffer functionality directly (due to 
+    // testing the start_thread and send_framebuffer functionality directly (due to
     // the complexity of testing threads and channels), we've removed it to avoid unused code.
-    
+
     // Helper to create a safe test buffer
     fn create_test_buffer<const W: usize, const H: usize>() -> Box<[[u32; W]; H]> {
         let buffer = Box::new(unsafe { MaybeUninit::<[[u32; W]; H]>::zeroed().assume_init() });
         buffer
     }
-    
+
     #[test]
     fn test_doublebuffer_creation() {
         const WIDTH: usize = 64;
         const HEIGHT: usize = 64;
-        
+
         // Create safe test buffers
         let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
         let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
-        
+
         // Get raw pointers
         let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
         let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
-        
+
         // Create doublebuffer
         let db = DoubleBuffer::<WIDTH, HEIGHT>::new(raw_ptr1, raw_ptr2);
-        
+
         // Test initial state
         assert!(!db.toggle); // Should start with toggle = false
         assert!(db.sender.is_none()); // No sender initially
     }
-    
+
     #[test]
     fn test_framebuffer_swapping() {
         const WIDTH: usize = 64;
         const HEIGHT: usize = 64;
-        
+
         // Create safe test buffers
         let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
         let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
-        
+
         // Get raw pointers
         let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
         let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
-        
+
         // Create doublebuffer
         let mut db = DoubleBuffer::<WIDTH, HEIGHT>::new(raw_ptr1, raw_ptr2);
-        
+
         // Initial toggle is false, so swap should make it true
         let fb1 = db.swap_framebuffer();
         // Note: We don't check toggle state directly as it's an internal implementation detail
-        
+
         // Write to the first buffer using embedded-graphics compatible method
         use embedded_graphics_core::geometry::Point;
         use embedded_graphics_core::pixelcolor::Bgr888;
-        
+
         fb1.set_pixel(Point::new(0, 0), Bgr888::new(255, 255, 255));
-        
+
         // Swap again, should get the other buffer
         let fb2 = db.swap_framebuffer();
-        
+
         // Check buffer contents using as_slice
         let fb2_slice = fb2.as_slice();
         assert_eq!(fb2_slice[0], 0); // Second buffer should be empty
-        
+
         // Swap again, should get back to the first buffer with our pixel set
         let fb3 = db.swap_framebuffer();
-        
+
         // First pixel in first buffer should be white
         let fb3_slice = fb3.as_slice();
         assert_ne!(fb3_slice[0], 0); // Should contain our white pixel
     }
-    
+
     // We can't easily test start_thread and send_framebuffer without mocking the RenderTarget trait
     // which would require significant mocking infrastructure. These functions involve threads
     // and channel communication which are hard to test in unit tests.
     //
     // For now, we'll skip these tests and focus on the core functionality that can be
     // tested reliably.
-    
+
     #[test]
     fn test_toggle_behavior() {
         const WIDTH: usize = 64;
         const HEIGHT: usize = 64;
-        
+
         // Create safe test buffers
         let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
         let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
-        
+
         // Get raw pointers
         let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
         let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
-        
+
         // Create doublebuffer
         let mut db = DoubleBuffer::<WIDTH, HEIGHT>::new(raw_ptr1, raw_ptr2);
-        
+
         // Track initial value - should be false
         let initial_toggle = db.toggle;
         assert!(!initial_toggle);
-        
+
         // First swap
         let _first_fb = db.swap_framebuffer();
-        
+
         // Second swap
         let _second_fb = db.swap_framebuffer();
-        
+
         // Third swap
         let _third_fb = db.swap_framebuffer();
-        
+
         // After three swaps, toggle should be true again
         assert!(db.toggle);
     }

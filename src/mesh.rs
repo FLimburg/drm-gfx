@@ -145,7 +145,7 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
     use nalgebra::Vector3;
-    
+
     #[test]
     fn test_geometry_check_validity_valid_data() {
         let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
@@ -161,10 +161,10 @@ mod tests {
             lines,
             normals,
         };
-        
+
         assert!(geometry.check_validity());
     }
-    
+
     #[test]
     fn test_geometry_check_validity_empty_vertices() {
         let vertices: &[[f32; 3]] = &[];
@@ -180,10 +180,10 @@ mod tests {
             lines,
             normals,
         };
-        
+
         assert!(!geometry.check_validity());
     }
-    
+
     #[test]
     fn test_geometry_check_validity_invalid_face_indices() {
         let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]; // Only 2 vertices
@@ -199,10 +199,10 @@ mod tests {
             lines,
             normals,
         };
-        
+
         assert!(!geometry.check_validity());
     }
-    
+
     #[test]
     fn test_geometry_check_validity_invalid_line_indices() {
         let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]; // Only 2 vertices
@@ -218,10 +218,10 @@ mod tests {
             lines,
             normals,
         };
-        
+
         assert!(!geometry.check_validity());
     }
-    
+
     #[test]
     fn test_geometry_check_validity_mismatched_colors() {
         let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
@@ -237,10 +237,10 @@ mod tests {
             lines,
             normals,
         };
-        
+
         assert!(!geometry.check_validity());
     }
-    
+
     #[test]
     fn test_lines_from_faces() {
         // Two triangular faces sharing an edge
@@ -248,9 +248,9 @@ mod tests {
             [0, 1, 2], // First triangle
             [2, 1, 3], // Second triangle sharing edge 1-2
         ];
-        
+
         let lines = Geometry::lines_from_faces(faces);
-        
+
         // Expected unique edges:
         // (0,1), (1,2), (2,0) from first triangle
         // (1,3), (3,2) from second triangle (edge 1-2 already counted)
@@ -262,7 +262,7 @@ mod tests {
         assert!(lines.contains(&(1, 3)));
         assert!(lines.contains(&(2, 3)));
     }
-    
+
     #[test]
     fn test_mesh_creation() {
         let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
@@ -278,20 +278,20 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mesh = K3dMesh::new(geometry);
-        
+
         // Check default values
         assert_eq!(mesh.render_mode, RenderMode::Points);
         assert_eq!(mesh.color, Bgr888::CSS_WHITE);
-        
+
         // Position should be at origin
         let position = mesh.get_position();
         assert_relative_eq!(position.x, 0.0);
         assert_relative_eq!(position.y, 0.0);
         assert_relative_eq!(position.z, 0.0);
     }
-    
+
     #[test]
     fn test_set_color() {
         let vertices = &[[0.0, 0.0, 0.0]];
@@ -307,13 +307,13 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
         mesh.set_color(Bgr888::CSS_RED);
-        
+
         assert_eq!(mesh.color, Bgr888::CSS_RED);
     }
-    
+
     #[test]
     fn test_set_render_mode() {
         let vertices = &[[0.0, 0.0, 0.0]];
@@ -329,17 +329,17 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
-        
+
         // Test setting to Lines mode
         mesh.set_render_mode(RenderMode::Lines);
         assert_eq!(mesh.render_mode, RenderMode::Lines);
-        
+
         // Test setting to Solid mode
         mesh.set_render_mode(RenderMode::Solid);
         assert_eq!(mesh.render_mode, RenderMode::Solid);
-        
+
         // Test setting to SolidLightDir mode
         let light_dir = Vector3::new(0.0, 1.0, 0.0);
         mesh.set_render_mode(RenderMode::SolidLightDir(light_dir));
@@ -352,7 +352,7 @@ mod tests {
             _ => panic!("Expected SolidLightDir render mode"),
         }
     }
-    
+
     #[test]
     fn test_set_position() {
         let vertices = &[[0.0, 0.0, 0.0]];
@@ -368,25 +368,25 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
-        
+
         // Set position to (1.0, 2.0, 3.0)
         mesh.set_position(1.0, 2.0, 3.0);
-        
+
         // Check position
         let position = mesh.get_position();
         assert_relative_eq!(position.x, 1.0);
         assert_relative_eq!(position.y, 2.0);
         assert_relative_eq!(position.z, 3.0);
-        
+
         // Check that model matrix was updated
         // The translation components should be in the last column
         assert_relative_eq!(mesh.model_matrix[(0, 3)], 1.0);
         assert_relative_eq!(mesh.model_matrix[(1, 3)], 2.0);
         assert_relative_eq!(mesh.model_matrix[(2, 3)], 3.0);
     }
-    
+
     #[test]
     fn test_set_attitude() {
         let vertices = &[[0.0, 0.0, 0.0]];
@@ -402,21 +402,21 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
-        
+
         // Set rotation angles in radians (45° roll, 30° pitch, 60° yaw)
-        let roll = std::f32::consts::PI / 4.0;   // 45°
-        let pitch = std::f32::consts::PI / 6.0;  // 30°
-        let yaw = std::f32::consts::PI / 3.0;    // 60°
-        
+        let roll = std::f32::consts::PI / 4.0; // 45°
+        let pitch = std::f32::consts::PI / 6.0; // 30°
+        let yaw = std::f32::consts::PI / 3.0; // 60°
+
         mesh.set_attitude(roll, pitch, yaw);
-        
+
         // Verify the rotation was applied by checking that model_matrix has changed
         // We don't check exact values, just that it's not identity anymore
         assert_ne!(mesh.model_matrix, nalgebra::Matrix4::identity());
     }
-    
+
     #[test]
     fn test_set_scale() {
         let vertices = &[[0.0, 0.0, 0.0]];
@@ -432,25 +432,25 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
-        
+
         // Set scale to 2.0
         mesh.set_scale(2.0);
-        
+
         // Check that the scale was applied to the similarity transform
         assert_relative_eq!(mesh.similarity.scaling(), 2.0);
-        
+
         // The first 3 diagonal elements of the matrix should be scaled by 2.0
         assert_relative_eq!(mesh.model_matrix[(0, 0)], 2.0);
         assert_relative_eq!(mesh.model_matrix[(1, 1)], 2.0);
         assert_relative_eq!(mesh.model_matrix[(2, 2)], 2.0);
-        
+
         // Test that setting scale to 0.0 is ignored
         mesh.set_scale(0.0);
         assert_relative_eq!(mesh.similarity.scaling(), 2.0); // Should still be 2.0
     }
-    
+
     #[test]
     fn test_set_target() {
         let vertices = &[[0.0, 0.0, 0.0]];
@@ -466,22 +466,22 @@ mod tests {
             lines,
             normals,
         };
-        
+
         let mut mesh = K3dMesh::new(geometry);
-        
+
         // First set position away from origin
         mesh.set_position(0.0, 0.0, 5.0);
-        
+
         // Set target point at origin
         let target = Point3::new(0.0, 0.0, 0.0);
         mesh.set_target(target);
-        
+
         // This should have created a "look at" transform
         // The mesh should be looking toward the origin
         // We can't easily test the exact rotation values, but we can verify
         // that the model matrix was updated
         assert_ne!(mesh.model_matrix, nalgebra::Matrix4::identity());
-        
+
         // Note: the set_target function uses look_at_rh which appears to negate the z position
         // This is expected behavior from the implementation
         let position = mesh.get_position();
