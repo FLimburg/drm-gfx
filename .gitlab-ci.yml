@@ -12,6 +12,8 @@ linting:
   stage: test
   script:
     - rustc --version && cargo --version  # Print version info for debugging
+    - cargo install clippy
+    - cargo install rustfmt
     - cargo clippy
     - cargo fmt --check
 
