@@ -16,11 +16,11 @@ keywords = [
 
 [dependencies]
 embedded-graphics-core = "0.4.0"
-log = "0.4.28"
+log = "0.4.29"
 nalgebra = {version = "0.33.2", default-features = false, features = [ "libm" ] }
 line_drawing = "1.0.1"
 drm = "0.14.1"
-tokio = { version = "1.47.1", features = ["full"], optional = true }
+tokio = { version = "1.49.0", features = ["full"], optional = true }
 
 [features]
 tokio-threads = ["tokio"]
