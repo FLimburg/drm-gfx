@@ -22,7 +22,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-drm-gfx = "0.1.0"
+drm-gfx = "0.1.1"
 ```
 
 ### features

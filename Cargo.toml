@@ -1,23 +1,19 @@
 [package]
 name = "drm-gfx"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
 authors = ["Florian Limburg"]
 description = "3D graphics rendering for direct rendering manager with optional tokio thread support"
 repository = "https://gitlab.com/FLimburg/drm-gfx"
-keywords = [
-    "3dfx",
-    "graphics",
-    "drm",
-]
+keywords = ["3dfx", "graphics", "drm"]
 
 
 [dependencies]
 embedded-graphics-core = "0.4.0"
 log = "0.4.29"
-nalgebra = {version = "0.34.1", default-features = false, features = [ "libm" ] }
+nalgebra = { version = "0.34.1", default-features = false, features = ["libm"] }
 line_drawing = "1.0.1"
 drm = "0.14.1"
 tokio = { version = "1.49.0", features = ["full"], optional = true }
