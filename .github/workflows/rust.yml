@@ -6,10 +6,15 @@ jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
+      - run: echo "::add-matcher::.github/rust.json"
       - run: cargo check
+      - run: echo "::remove-matcher owner=rust"
 
   lints:
     name: Lints
@@ -22,10 +27,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: echo "::add-matcher::.github/rust.json"
       - run: cargo clippy -- -D warnings
-        continue-on-error: true
-        env:
-          NO_COLOR: 1
-      - run: echo "::remove-matcher owner=rust"
       - run: cargo fmt --all --check
 
   doc:
