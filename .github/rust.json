@@ -4,16 +4,16 @@
       "owner": "rust",
       "pattern": [
         {
-          "regexp": "^(warning|warn|error)(\\[(.*)\\])?: (.*)$",
+          "regexp": "^(warning|error)(\\[([^\\]]+)\\])?: (.*)$",
           "severity": 1,
           "message": 4,
           "code": 3
         },
         {
-          "regexp": "^([\\s->=]*(.*):(\\d*):(\\d*)|.*)$",
-          "file": 2,
-          "line": 3,
-          "column": 4
+          "regexp": "^\\s*-->\\s*([^:]+):(\\d+):(\\d+)\\s*$",
+          "file": 1,
+          "line": 2,
+          "column": 3
         }
       ]
     }

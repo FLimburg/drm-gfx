@@ -1,9 +1,9 @@
 use camera::Camera;
 use embedded_graphics_core::pixelcolor::Bgr888;
 use embedded_graphics_core::pixelcolor::RgbColor;
-use log;
 use mesh::K3dMesh;
 use mesh::RenderMode;
+use log;
 use nalgebra::Matrix4;
 use nalgebra::Point2;
 use nalgebra::Point3;

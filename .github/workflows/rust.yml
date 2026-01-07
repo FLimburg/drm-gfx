@@ -19,8 +19,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: echo "::add-matcher::.github/rust.json"
       - run: cargo clippy -- -D warnings
-      - run: cargo fmt --all --check
       - run: echo "::remove-matcher owner=rust"
+      - run: cargo fmt --all --check
 
   doc:
     needs:
