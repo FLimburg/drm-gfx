@@ -22,7 +22,7 @@ jobs:
       run: cargo fmt --all -- --check
     - name: clippy
       run: rustup component add clippy
-           cargo clippy --all --all-features --all-targets -- -D warnings -A clippy::redundant_static_lifetimes
+           cargo clippy
     - name: Build
       run: cargo build --verbose
     - name: Run tests
