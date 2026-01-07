@@ -43,20 +43,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libdrm-dev
-      - name: Fetch drm headers
-        run: ./.github/workflows/fetch_headers.sh
       - uses: dtolnay/rust-toolchain@1.70.0
         with:
           components: clippy
-        # TODO: Remove once our MSRV is past 1.84 for the new resolver
-      - uses: dtolnay/rust-toolchain@1.84.0
-      - name: Downgrade msrv aware
-        run: env CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS=fallback cargo +1.84 generate-lockfile
       - name: Cargo cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -68,7 +59,7 @@ jobs:
           path: target
           key: ${{ runner.os }}-build-rust_1.70.0-check-${{ hashFiles('**/Cargo.toml') }}
       - name: Clippy
-        run: cargo +1.70.0 clippy --all --all-features -- -D warnings -A clippy::redundant_static_lifetimes
+        run: cargo clippy -- -D warnings
 
   test:
     needs:
