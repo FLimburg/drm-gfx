@@ -1,12 +1,12 @@
 [package]
 name = "drm-gfx"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
 authors = ["Florian Limburg"]
 description = "3D graphics rendering for direct rendering manager with optional tokio thread support"
-repository = "https://gitlab.com/FLimburg/drm-gfx"
+repository = "https://github.com/FLimburg/drm-gfx"
 keywords = ["3dfx", "graphics", "drm"]
 
 

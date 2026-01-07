@@ -1,9 +1,11 @@
 # drm-gfx
+<a href="https://crates.io/crates/drm-gfx"><img alt="crates.io" src="https://img.shields.io/crates/v/drm-gfx"></a>
+<a href="https://github.com/FLimburg/drm-gfx/actions"><img alt="actions" src="https://github.com/FLimburg/drm-gfx/actions/workflows/rust.yml/badge.svg"></a>
 
 A 3D graphics rendering library for the Linux Direct Rendering Manager (DRM). This library provides a lightweight 3D rendering engine that works directly with the DRM interface, without requiring a full graphics stack or window manager.
 
 Or to put it more bluntly:
-I stitched together https://github.com/Kezii/embedded-gfx/tree/master with https://github.com/Smithay/drm-rs/tree/develop without any care and threw it into https://gitlab.com/FLimburg/drm-gfx .
+I stitched together https://github.com/Kezii/embedded-gfx/tree/master with https://github.com/Smithay/drm-rs/tree/develop without any care and threw it into https://github.com/FLimburg/drm-gfx .
 
 ## Features
 
