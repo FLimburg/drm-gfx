@@ -16,12 +16,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: fmt
-      run: rustup component add rustfmt
-           cargo fmt --check
+    - name: check
+      run: cargo check --verbose
+    - name: format
+      run: cargo fmt --all -- --check
     - name: clippy
       run: rustup component add clippy
-           cargo clippy
+           cargo clippy --all --all-features --all-targets -- -D warnings -A clippy::redundant_static_lifetimes
     - name: Build
       run: cargo build --verbose
     - name: Run tests
