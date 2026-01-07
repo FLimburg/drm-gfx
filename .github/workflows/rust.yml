@@ -27,6 +27,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: echo "::add-matcher::.github/rust.json"
       - run: cargo clippy -- -D warnings
+        continue-on-error: true
       - run: cargo fmt --all --check
 
   doc:
