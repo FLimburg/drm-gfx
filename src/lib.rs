@@ -1,6 +1,7 @@
 use camera::Camera;
 use embedded_graphics_core::pixelcolor::Bgr888;
 use embedded_graphics_core::pixelcolor::RgbColor;
+use log;
 use mesh::K3dMesh;
 use mesh::RenderMode;
 use nalgebra::Matrix4;
