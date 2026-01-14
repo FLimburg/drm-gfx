@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: echo "::add-matcher::.github/rust.json"
-      - run: cargo check
+      - run: cargo check --all-features
       - run: echo "::remove-matcher owner=rust"
 
   lints:
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: echo "::add-matcher::.github/rust.json"
-      - run: cargo clippy -- -D warnings
+      - run: cargo clippy --all-features -- -D warnings
       - run: cargo fmt --all --check
 
   doc:

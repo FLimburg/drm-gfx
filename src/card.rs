@@ -1,8 +1,6 @@
 // #![allow(dead_code)]
 use drm::Device;
 use drm::control::Device as ControlDevice;
-// use drm::buffer::DrmFourcc;
-// use drm::control::{connector, crtc};
 
 #[derive(Debug)]
 /// A simple wrapper for a device node.
@@ -22,14 +20,14 @@ impl ControlDevice for Card {}
 
 /// Simple helper methods for opening a `Card`.
 impl Card {
-    pub fn open(path: &str) -> Self {
+    pub fn open(path: &str) -> Result<Self, std::io::Error> {
         let mut options = std::fs::OpenOptions::new();
         options.read(true);
         options.write(true);
-        Card(options.open(path).unwrap())
+        Ok(Card(options.open(path)?))
     }
 
-    pub fn open_global(device: &str) -> Self {
+    pub fn open_global(device: &str) -> Result<Self, std::io::Error> {
         Self::open(device)
     }
 }

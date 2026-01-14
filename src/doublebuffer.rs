@@ -2,7 +2,7 @@ use crate::{
     drm_render_target::{FramebufferTarget, RenderTarget},
     framebuffer::DmaReadyFramebuffer,
 };
-use log::{debug, error, info, trace};
+use log::{error, info, trace};
 use std::{
     ffi::c_void,
     sync::{Arc, Mutex},
@@ -48,7 +48,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
 
         #[cfg(not(feature = "tokio"))]
         std::thread::spawn(move || {
-            debug!("Framebuffer writer thread started for std runtime");
+            trace!("Framebuffer writer thread started for std runtime");
             loop {
                 let ptr = receive.recv().unwrap();
                 trace!("Received framebuffer pointer: {ptr}");
@@ -66,7 +66,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
 
         #[cfg(feature = "tokio")]
         tokio::spawn(async move {
-            debug!("Framebuffer writer thread started for tokio runtime");
+            trace!("Framebuffer writer thread started for tokio runtime");
             loop {
                 let ptr = receive.recv().await.unwrap();
                 trace!("Received framebuffer pointer: {}", ptr);
