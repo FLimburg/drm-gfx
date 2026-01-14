@@ -1,7 +1,7 @@
-on: 
+on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 name: Reease
 
@@ -12,8 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo check
-      - run: cargo clippy -- -D warnings
+      - run: cargo check --all-features
+      - run: cargo clippy --all-features -- -D warnings
       - run: cargo fmt --all --check
       - run: cargo doc
 
