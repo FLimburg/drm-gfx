@@ -4,8 +4,7 @@ use drm::control::{Device as ControlDevice, dumbbuffer::DumbBuffer, framebuffer}
 use crate::card::Card;
 use drm::buffer::{Buffer, DrmFourcc};
 use drm::control::{Mode, connector, crtc};
-use log::{debug, trace};
-// use anyhow::Result;
+use log::{debug, error, trace};
 
 pub struct RenderTarget {
     pub card: Card,
@@ -19,14 +18,43 @@ pub struct RenderTarget {
     pub mode: Mode,
 }
 
+impl Default for RenderTarget {
+    fn default() -> Self {
+        let device_paths = [
+            "/dev/dri/card0",
+            "/dev/dri/card1",
+            "/dev/dri/card2",
+            "/dev/dri/renderD128",
+            "/dev/dri/renderD129",
+        ];
+        for dev in device_paths {
+            match Self::new(dev) {
+                Ok(render_target) => {
+                    trace!("Created render target for device {dev}");
+                    return render_target;
+                }
+                Err(e) => {
+                    trace!("Could not created render target for device {dev}: {e}");
+                    continue;
+                }
+            }
+        }
+
+        error!("Could not create any render target!");
+        panic!("Could not create any render target!");
+    }
+}
+
 impl RenderTarget {
-    pub fn new(device: &str) -> Self {
-        let card = Card::open_global(device);
+    pub fn new(device: &str) -> Result<Self, std::io::Error> {
+        let card = Card::open_global(device)
+            .inspect_err(|e| error!("failed to open device {device}: {e}"))?;
 
         // Load the information.
         let res = card
             .resource_handles()
-            .expect("Could not load normal resource ids.");
+            .inspect_err(|e| error!("failed to load resource handle ids from {device}: {e}"))?;
+
         let coninfo: Vec<connector::Info> = res
             .connectors()
             .iter()
@@ -100,14 +128,14 @@ impl RenderTarget {
 
         debug!("mode: {mode:#?}");
         trace!("frame buffer handle:{fb:#?}");
-        debug!("dumb buffer{db:#?}");
+        trace!("dumb buffer{db:#?}");
 
         // Set the crtc
         // On many setups, this requires root access.
         card.set_crtc(crtc.handle(), Some(fb), (0, 0), &[con.handle()], Some(mode))
             .expect("Could not set CRTC");
 
-        Self {
+        Ok(Self {
             card,
             crtc: crtc.handle(),
             connection: con.handle(),
@@ -117,11 +145,11 @@ impl RenderTarget {
             height,
             format,
             mode,
-        }
+        })
     }
 
     pub fn destroy(&self) {
-        debug!("Destroy the framebuffer");
+        trace!("Destroy the framebuffer");
         self.card.destroy_framebuffer(self.fb).unwrap();
         self.card.destroy_dumb_buffer(self.db).unwrap();
     }
