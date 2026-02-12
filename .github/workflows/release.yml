@@ -4,6 +4,9 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+"
 
 name: Reease
+permissions:
+  actions: read # Read workflow data
+  contents: read # Read repository contents
 
 jobs:
   checks:

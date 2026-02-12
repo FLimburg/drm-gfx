@@ -1,6 +1,9 @@
 on: [push, pull_request]
 
 name: rust
+permissions:
+  actions: read # Read workflow data
+  contents: read # Read repository contents
 
 jobs:
   check:
