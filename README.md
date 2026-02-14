@@ -24,8 +24,14 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-drm-gfx = "0.1.1"
+drm-gfx = "0.1.3"
 ```
+
+## Limitations
+Currently only displays with a resolution fo 1024 x 600 are supported.
+If you need something else you will need to adapt the drm-gfx code at
+drm_renter_target.rs:13
+drm_renter_target.rs:14
 
 ### features
 
@@ -54,19 +60,22 @@ use nalgebra::Point3;
 use std::f32::consts::PI;
 use std::ffi::c_void;
 
-mod locs;
-// TODO: make this run time
-// this needs to fit with the output from display creation
-const WIDTH: usize = 1024;
-const HEIGHT: usize = 600;
-
+mod points;
 
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
-    let locs = Vec![[-1,0,0],[1,0,0],[0,1,0]];
-    // card1 is used for the rasperry pi hdmi port
-    let display = RenderTarget::new("/dev/dri/card1");
+    let points = Vec![[-1,0,0],[1,0,0],[0,1,0]];
+    
+    // this will try the following list of devices and use the 1st that seems to be working:
+    // "/dev/dri/card0",
+    // "/dev/dri/card1",
+    // "/dev/dri/card2",
+    // "/dev/dri/renderD128",
+    // "/dev/dri/renderD129",
+    let display = RenderTarget::default();
+    // or, if you have a display that is not in the list:
+    // let display = RenderTarget::new("/dev/dri/myweirdscreen42");
 
     let mut locations = K3dMesh::new(Geometry{
         vertices: &locs,
@@ -76,16 +85,6 @@ async fn main() {
         normals: &[],
     });
     locations.set_color(Bgr888::CSS_GREEN);
-
-    let mut raw_framebuffer_0 = Box::new([0u32; WIDTH * HEIGHT]);
-    let mut raw_framebuffer_1 = Box::new([0u32; WIDTH * HEIGHT]);
-
-    let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
-        raw_framebuffer_0.as_mut_ptr() as *mut c_void,
-        raw_framebuffer_1.as_mut_ptr() as *mut c_void,
-    );
-
-    buffers.start_thread(display);
 
     let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
 

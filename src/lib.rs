@@ -1,4 +1,6 @@
+use crate::{doublebuffer::DoubleBuffer, drm_render_target::RenderTarget};
 use camera::Camera;
+use const_env::env_item;
 use embedded_graphics_core::pixelcolor::Bgr888;
 use embedded_graphics_core::pixelcolor::RgbColor;
 use mesh::K3dMesh;
@@ -7,6 +9,7 @@ use nalgebra::Matrix4;
 use nalgebra::Point2;
 use nalgebra::Point3;
 use nalgebra::Vector3;
+use std::ffi::c_void;
 
 pub mod camera;
 mod card;
@@ -17,6 +20,14 @@ pub mod framebuffer;
 pub mod mesh;
 pub mod perfcounter;
 
+// TODO: make this run time
+// this needs to fit with the output from display creation
+#[env_item]
+const WIDTH: usize = 1024;
+#[env_item]
+const HEIGHT: usize = 600;
+const SIZE: usize = WIDTH * HEIGHT;
+
 #[derive(Debug)]
 pub enum DrawPrimitive {
     ColoredPoint(Point2<i32>, Bgr888),
@@ -26,16 +37,36 @@ pub enum DrawPrimitive {
 
 pub struct K3dengine {
     pub camera: Camera,
+    pub display: Option<RenderTarget>,
     width: u16,
     height: u16,
+    _buffers: DoubleBuffer<WIDTH, HEIGHT>,
+    _framebuffer_0: Box<[u32; WIDTH * HEIGHT]>,
+    _framebuffer_1: Box<[u32; WIDTH * HEIGHT]>,
 }
 
 impl K3dengine {
-    pub fn new(width: u16, height: u16) -> K3dengine {
+    pub fn new() -> K3dengine {
+        #[cfg(not(test))]
+        let display = Some(RenderTarget::default());
+        #[cfg(test)]
+        let display = None;
+
+        let mut raw_framebuffer_0 = Box::new([0u32; WIDTH * HEIGHT]);
+        let mut raw_framebuffer_1 = Box::new([0u32; WIDTH * HEIGHT]);
+        let buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
+            raw_framebuffer_0.as_mut_ptr() as *mut c_void,
+            raw_framebuffer_1.as_mut_ptr() as *mut c_void,
+        );
+
         K3dengine {
-            camera: Camera::new(width as f32 / height as f32),
-            width,
-            height,
+            camera: Camera::new(WIDTH as f32 / HEIGHT as f32),
+            display,
+            width: WIDTH as u16,
+            height: HEIGHT as u16,
+            _buffers: buffers,
+            _framebuffer_0: raw_framebuffer_0,
+            _framebuffer_1: raw_framebuffer_1,
         }
     }
 
@@ -250,28 +281,19 @@ mod tests {
 
     #[test]
     fn test_engine_creation() {
-        let width = 800;
-        let height = 600;
-        let engine = K3dengine::new(width, height);
+        let engine = K3dengine::new();
 
-        assert_eq!(engine.width, width);
-        assert_eq!(engine.height, height);
+        assert_eq!(engine.width, WIDTH as u16);
+        assert_eq!(engine.height, HEIGHT as u16);
         // We can't test aspect_ratio directly as it's private, but we know it's used internally
     }
 
     #[test]
     fn test_transform_point_in_view() {
-        // Set up a camera and view matrix to see a point in front
-        let mut camera = Camera::new(800.0 / 600.0);
+        let mut engine = K3dengine::new();
         // Move camera back to see the point at origin
-        camera.set_position(Point3::new(0.0, 0.0, 5.0));
-        camera.set_target(Point3::new(0.0, 0.0, 0.0));
-
-        let engine = K3dengine {
-            camera,
-            width: 800,
-            height: 600,
-        };
+        engine.camera.set_position(Point3::new(0.0, 0.0, 5.0));
+        engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
 
         // Point at origin
         let point = [0.0, 0.0, 0.0];
@@ -297,7 +319,7 @@ mod tests {
     fn test_transform_point_behind_camera() {
         // For this test, we'll skip the strict assertion and just check that
         // the engine handles the case gracefully without crashing
-        let engine = K3dengine::new(800, 600);
+        let engine = K3dengine::new();
 
         // Try a point that's either behind or in front
         let point = [0.0, 0.0, 100.0];
@@ -309,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_transform_point_outside_frustum() {
-        let engine = K3dengine::new(800, 600);
+        let engine = K3dengine::new();
 
         // Point outside the near/far planes
         let point = [0.0, 0.0, -100.0]; // Too far
@@ -323,17 +345,10 @@ mod tests {
 
     #[test]
     fn test_transform_points() {
-        // Set up a camera that can see the points
-        let mut camera = Camera::new(800.0 / 600.0);
+        let mut engine = K3dengine::new();
         // Move camera back to see the points
-        camera.set_position(Point3::new(0.0, 0.0, 5.0));
-        camera.set_target(Point3::new(0.0, 0.0, 0.0));
-
-        let engine = K3dengine {
-            camera,
-            width: 800,
-            height: 600,
-        };
+        engine.camera.set_position(Point3::new(0.0, 0.0, 5.0));
+        engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
 
         // Create points in front of the camera
         let vertices = [
@@ -353,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_render_points_mode() {
-        let engine = K3dengine::new(800, 600);
+        let engine = K3dengine::new();
 
         // Create a test mesh with points render mode
         let mut mesh = create_test_mesh();
@@ -384,7 +399,7 @@ mod tests {
 
     #[test]
     fn test_render_lines_mode() {
-        let engine = K3dengine::new(800, 600);
+        let engine = K3dengine::new();
 
         // Create a test mesh with lines render mode
         let mut mesh = create_test_mesh();
@@ -415,7 +430,7 @@ mod tests {
 
     #[test]
     fn test_render_solid_mode() {
-        let engine = K3dengine::new(800, 600);
+        let engine = K3dengine::new();
 
         // Create a test mesh with solid render mode
         let mut mesh = create_test_mesh();
@@ -446,7 +461,7 @@ mod tests {
 
     #[test]
     fn test_render_solid_light_mode() {
-        let engine = K3dengine::new(800, 600);
+        let engine = K3dengine::new();
 
         // Create a test mesh with solid light render mode
         let mut mesh = create_test_mesh();
@@ -478,7 +493,7 @@ mod tests {
 
     #[test]
     fn test_render_backface_culling() {
-        let mut engine = K3dengine::new(800, 600);
+        let mut engine = K3dengine::new();
 
         // Move camera to a position where we can see the mesh
         engine.camera.set_position(Point3::new(0.0, 0.0, 5.0));
@@ -516,7 +531,7 @@ mod tests {
 
     #[test]
     fn test_render_with_vertex_colors() {
-        let engine = K3dengine::new(800, 600);
+        let engine = K3dengine::new();
 
         // Create a test mesh with vertex colors
         let vertices = &[[0.0, 0.0, -5.0], [1.0, 0.0, -5.0], [0.0, 1.0, -5.0]];

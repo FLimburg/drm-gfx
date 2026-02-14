@@ -12,8 +12,8 @@ pub struct RenderTarget {
     pub connection: connector::Handle,
     pub fb: framebuffer::Handle,
     pub db: DumbBuffer,
-    pub width: u16,
-    pub height: u16,
+    pub width: usize,
+    pub height: usize,
     pub format: DrmFourcc,
     pub mode: Mode,
 }
@@ -141,8 +141,8 @@ impl RenderTarget {
             connection: con.handle(),
             fb,
             db,
-            width,
-            height,
+            width: width as usize,
+            height: height as usize,
             format,
             mode,
         })

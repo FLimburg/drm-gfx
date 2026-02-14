@@ -22,6 +22,7 @@ pub struct DoubleBuffer<const W: usize, const H: usize> {
 impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
     pub fn new(raw_framebuffer_0: *mut c_void, raw_framebuffer_1: *mut c_void) -> Self {
         trace!("Creating new DoubleBuffer with raw framebuffers");
+
         let fbuf0 = DmaReadyFramebuffer::<W, H>::new(raw_framebuffer_0, true);
         let fbuf1 = DmaReadyFramebuffer::<W, H>::new(raw_framebuffer_1, true);
 
@@ -55,11 +56,11 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
                 unsafe {
                     let _lock = mutex2.lock().unwrap();
 
-                    let ptr = ptr as *mut [u32; 1024 * 600];
-                    let ptr = &mut *ptr;
+                    let ptr = ptr as *mut u32;
+                    let slice = std::slice::from_raw_parts_mut(ptr, W * H);
 
-                    display.eat_framebuffer(ptr).unwrap();
-                    ptr.fill(0); // 2.2ms
+                    display.eat_framebuffer(slice).unwrap();
+                    slice.fill(0); // 2.2ms
                 };
             }
         });
@@ -73,11 +74,11 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
                 unsafe {
                     let _lock = mutex2.lock().unwrap();
 
-                    let ptr = ptr as *mut [u32; 1024 * 600];
-                    let ptr = &mut *ptr;
+                    let ptr = ptr as *mut u32;
+                    let slice = std::slice::from_raw_parts_mut(ptr, W * H);
 
-                    display.eat_framebuffer(ptr).unwrap();
-                    ptr.fill(0); // 2.2ms
+                    display.eat_framebuffer(slice).unwrap();
+                    slice.fill(0); // 2.2ms
                 };
             }
         });
@@ -158,6 +159,13 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
     }
 }
+
+// Add at the end of doublebuffer.rs, after the struct definition
+// SAFETY: The raw pointers in DmaReadyFramebuffer point to memory owned by
+// RenderTarget which outlives the DoubleBuffer. Access to the framebuffers
+// is synchronized via the mutex field, ensuring only one thread accesses
+// a framebuffer at a time.
+unsafe impl<const W: usize, const H: usize> Send for DoubleBuffer<W, H> {}
 
 #[cfg(test)]
 mod tests {
