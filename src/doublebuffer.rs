@@ -2,7 +2,7 @@ use crate::{
     drm_render_target::{FramebufferTarget, RenderTarget},
     framebuffer::DmaReadyFramebuffer,
 };
-use log::{error, info, trace};
+use log::{debug, error, info, trace};
 use std::{
     ffi::c_void,
     sync::{Arc, Mutex},
@@ -35,7 +35,10 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
     }
 
-    pub fn start_thread(&mut self, display: RenderTarget) {
+    pub fn start_thread(&mut self) {
+        debug!("Creating RenderTarget from card");
+        let mut display = RenderTarget::default();
+
         info!("Starting fb writer thread");
         #[cfg(not(feature = "tokio"))]
         let (send, receive) = std::sync::mpsc::channel();
@@ -43,9 +46,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         let (send, mut receive) = tokio::sync::mpsc::channel(16);
 
         self.sender = Some(send);
-
         let mutex2 = self.mutex.clone();
-        let mut display = display;
 
         #[cfg(not(feature = "tokio"))]
         std::thread::spawn(move || {

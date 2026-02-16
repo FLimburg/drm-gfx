@@ -1,4 +1,4 @@
-use crate::{doublebuffer::DoubleBuffer, drm_render_target::RenderTarget};
+use crate::doublebuffer::DoubleBuffer;
 use camera::Camera;
 use const_env::env_item;
 use embedded_graphics_core::pixelcolor::Bgr888;
@@ -37,37 +37,43 @@ pub enum DrawPrimitive {
 
 pub struct K3dengine {
     pub camera: Camera,
-    pub display: Option<RenderTarget>,
     width: u16,
     height: u16,
-    _buffers: DoubleBuffer<WIDTH, HEIGHT>,
+    pub buffers: DoubleBuffer<WIDTH, HEIGHT>,
     _framebuffer_0: Box<[u32; WIDTH * HEIGHT]>,
     _framebuffer_1: Box<[u32; WIDTH * HEIGHT]>,
 }
 
 impl K3dengine {
-    pub fn new() -> K3dengine {
+    pub fn new() -> Self {
+        let (raw_framebuffer_0, raw_framebuffer_1, mut buffers) = K3dengine::create_buffers();
         #[cfg(not(test))]
-        let display = Some(RenderTarget::default());
-        #[cfg(test)]
-        let display = None;
+        buffers.start_thread();
 
-        let mut raw_framebuffer_0 = Box::new([0u32; WIDTH * HEIGHT]);
-        let mut raw_framebuffer_1 = Box::new([0u32; WIDTH * HEIGHT]);
+        let engine = K3dengine {
+            camera: Camera::new(WIDTH as f32 / HEIGHT as f32),
+            width: WIDTH as u16,
+            height: HEIGHT as u16,
+            buffers,
+            _framebuffer_0: raw_framebuffer_0,
+            _framebuffer_1: raw_framebuffer_1,
+        };
+
+        engine
+    }
+
+    fn create_buffers() -> (
+        Box<[u32; SIZE]>,
+        Box<[u32; SIZE]>,
+        DoubleBuffer<WIDTH, HEIGHT>,
+    ) {
+        let mut raw_framebuffer_0 = Box::new([0u32; SIZE]);
+        let mut raw_framebuffer_1 = Box::new([0u32; SIZE]);
         let buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
             raw_framebuffer_0.as_mut_ptr() as *mut c_void,
             raw_framebuffer_1.as_mut_ptr() as *mut c_void,
         );
-
-        K3dengine {
-            camera: Camera::new(WIDTH as f32 / HEIGHT as f32),
-            display,
-            width: WIDTH as u16,
-            height: HEIGHT as u16,
-            _buffers: buffers,
-            _framebuffer_0: raw_framebuffer_0,
-            _framebuffer_1: raw_framebuffer_1,
-        }
+        (raw_framebuffer_0, raw_framebuffer_1, buffers)
     }
 
     fn transform_point(&self, point: &[f32; 3], model_matrix: Matrix4<f32>) -> Option<Point3<i32>> {
