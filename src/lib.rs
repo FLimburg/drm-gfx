@@ -1,4 +1,4 @@
-use crate::doublebuffer::DoubleBuffer;
+use crate::{doublebuffer::DoubleBuffer, framebuffer::DmaReadyFramebuffer};
 use camera::Camera;
 use const_env::env_item;
 use embedded_graphics_core::pixelcolor::Bgr888;
@@ -39,15 +39,23 @@ pub struct K3dengine {
     pub camera: Camera,
     width: u16,
     height: u16,
-    pub buffers: DoubleBuffer<WIDTH, HEIGHT>,
+    buffers: DoubleBuffer<WIDTH, HEIGHT>,
     _framebuffer_0: Box<[u32; WIDTH * HEIGHT]>,
     _framebuffer_1: Box<[u32; WIDTH * HEIGHT]>,
 }
 
 impl K3dengine {
     pub fn new() -> Self {
-        let (raw_framebuffer_0, raw_framebuffer_1, mut buffers) = K3dengine::create_buffers();
-        #[cfg(not(test))]
+        // let (raw_framebuffer_0, raw_framebuffer_1, mut buffers) = K3dengine::create_buffers();
+
+        let mut raw_framebuffer_0 = Box::new([0u32; SIZE]);
+        let mut raw_framebuffer_1 = Box::new([0u32; SIZE]);
+        let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
+            raw_framebuffer_0.as_mut_ptr() as *mut c_void,
+            raw_framebuffer_1.as_mut_ptr() as *mut c_void,
+        );
+
+        // #[cfg(not(test))]
         buffers.start_thread();
 
         let engine = K3dengine {
@@ -62,18 +70,22 @@ impl K3dengine {
         engine
     }
 
-    fn create_buffers() -> (
-        Box<[u32; SIZE]>,
-        Box<[u32; SIZE]>,
-        DoubleBuffer<WIDTH, HEIGHT>,
-    ) {
-        let mut raw_framebuffer_0 = Box::new([0u32; SIZE]);
-        let mut raw_framebuffer_1 = Box::new([0u32; SIZE]);
-        let buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
-            raw_framebuffer_0.as_mut_ptr() as *mut c_void,
-            raw_framebuffer_1.as_mut_ptr() as *mut c_void,
-        );
-        (raw_framebuffer_0, raw_framebuffer_1, buffers)
+    pub fn get_current_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<WIDTH, HEIGHT> {
+        self.buffers.get_current_framebuffer()
+    }
+
+    pub fn swap_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<WIDTH, HEIGHT> {
+        self.buffers.swap_framebuffer()
+    }
+
+    #[cfg(not(feature = "tokio"))]
+    pub fn send_framebuffer(&mut self) {
+        self.buffers.send_framebuffer();
+    }
+
+    #[cfg(feature = "tokio")]
+    pub async fn send_framebuffer(&mut self) {
+        self.buffers.send_framebuffer().await;
     }
 
     fn transform_point(&self, point: &[f32; 3], model_matrix: Matrix4<f32>) -> Option<Point3<i32>> {

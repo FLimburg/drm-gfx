@@ -1,6 +1,6 @@
 [package]
 name = "drm-gfx"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
@@ -8,10 +8,15 @@ authors = ["Florian Limburg"]
 description = "3D graphics rendering for direct rendering manager with optional tokio thread support"
 repository = "https://github.com/FLimburg/drm-gfx"
 keywords = ["3dfx", "graphics", "drm"]
+autoexamples = true
 
+[lib]
+name = "drm_gfx"
+path = "src/lib.rs"
 
 [dependencies]
-embedded-graphics-core = "0.4.0"
+embedded-graphics = { version = "0.8.2" }
+embedded-graphics-core = { version = "0.4.0" }
 log = "0.4.29"
 nalgebra = { version = "0.34.1", default-features = false, features = ["libm"] }
 line_drawing = "1.0.1"

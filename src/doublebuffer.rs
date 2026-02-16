@@ -96,6 +96,14 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
     }
 
+    pub fn get_current_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<W, H> {
+        if self.toggle {
+            &mut self.fbuf0
+        } else {
+            &mut self.fbuf1
+        }
+    }
+
     #[cfg(not(feature = "tokio"))]
     pub fn send_framebuffer(&mut self) {
         {

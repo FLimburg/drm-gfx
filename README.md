@@ -24,14 +24,8 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-drm-gfx = "0.1.3"
+drm-gfx = "0.2.0"
 ```
-
-## Limitations
-Currently only displays with a resolution fo 1024 x 600 are supported.
-If you need something else you will need to adapt the drm-gfx code at
-drm_renter_target.rs:13
-drm_renter_target.rs:14
 
 ### features
 
@@ -41,82 +35,10 @@ use feature tokio-thread to use drm-gfx in a tokio based application
 
 Define WIDTH and HEIGHT of your screen as env variables during compilation, like:
 `WIDTH=800 HEIGHT=600 cargo build -r --features=tokio-threads`
-```rust
-use drm_gfx::mesh::K3dMesh;
-use drm_gfx::{
-    draw::draw,
-    mesh::Geometry,
-    perfcounter::PerformanceCounter,
-    K3dengine,
-    doublebuffer::DoubleBuffer,
-};
-use embedded_graphics::Drawable;
-use embedded_graphics::{
-    geometry::Point,
-    mono_font::{ascii::FONT_6X10, MonoTextStyle},
-    text::Text,
-};
-use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
-use nalgebra::Point3;
-use std::f32::consts::PI;
-use std::ffi::c_void;
 
-mod points;
+Run the examples:
+`WIDTH=1024 HEIGHT=600 cargo run --example triangles`
 
-#[tokio::main]
-async fn main() {
-    println!("Hello, world!");
-    let points = Vec![[-1,0,0],[1,0,0],[0,1,0]];
-    
-    let mut locations = K3dMesh::new(Geometry{
-        vertices: &locs,
-        faces: &[],
-        colors: &[],
-        lines: &[],
-        normals: &[],
-    });
-    locations.set_color(Bgr888::CSS_GREEN);
-
-    let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
-
-    // this will try the following list of devices and use the 1st that seems to be working:
-    // "/dev/dri/card0",
-    // "/dev/dri/card1",
-    // "/dev/dri/card2",
-    // "/dev/dri/renderD128",
-    // "/dev/dri/renderD129",
-    // If all fail it will panic.
-    // the list can be changed at drm_render_target.rs:23
-    let mut engine = K3dengine::new(WIDTH as u16, HEIGHT as u16);
-    engine.camera.set_position(Point3::new(0.0, 0.0, -4.0));
-    engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
-    engine.camera.set_fovy(PI / 4.0);
-
-    let mut perf = PerformanceCounter::new();
-    // perf.only_fps(true);
-
-    println!("Starting render loop ... ");
-    loop {
-        let fbuf = buffers.swap_framebuffer();
-
-        perf.start_of_frame();
-
-        engine.render([&locations], |p| draw(p, fbuf));
-        perf.add_measurement("render");
-
-        Text::new(perf.get_text(), Point::new(20, 20), text_style)
-            .draw(fbuf)
-            .unwrap();
-
-        buffers.send_framebuffer();
-        perf.add_measurement("draw");
-
-        perf.print();
-    }
-
-    println!("all done. Last perf: {}", perf.get_text());
-}
-```
 
 ## Supported Render Modes
 
@@ -144,20 +66,6 @@ perf.start();
 // Perform rendering
 perf.end();
 println!("Rendering took {} ms", perf.elapsed_ms());
-```
-
-## Framebuffer Optimization
-
-For improved performance, the library supports double buffering:
-
-```rust
-use drm_gfx::doublebuffer::DoubleBuffer;
-
-let mut buffer = DoubleBuffer::new(width, height);
-
-// In your render loop:
-buffer.swap();
-let framebuffer = buffer.get_front();
 ```
 
 ## License
