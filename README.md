@@ -39,6 +39,8 @@ use feature tokio-thread to use drm-gfx in a tokio based application
 
 ### Basic Example
 
+Define WIDTH and HEIGHT of your screen as env variables during compilation, like:
+`WIDTH=800 HEIGHT=600 cargo build -r --features=tokio-threads`
 ```rust
 use drm_gfx::mesh::K3dMesh;
 use drm_gfx::{
@@ -47,7 +49,6 @@ use drm_gfx::{
     perfcounter::PerformanceCounter,
     K3dengine,
     doublebuffer::DoubleBuffer,
-    drm_render_target::RenderTarget,
 };
 use embedded_graphics::Drawable;
 use embedded_graphics::{
@@ -67,16 +68,6 @@ async fn main() {
     println!("Hello, world!");
     let points = Vec![[-1,0,0],[1,0,0],[0,1,0]];
     
-    // this will try the following list of devices and use the 1st that seems to be working:
-    // "/dev/dri/card0",
-    // "/dev/dri/card1",
-    // "/dev/dri/card2",
-    // "/dev/dri/renderD128",
-    // "/dev/dri/renderD129",
-    let display = RenderTarget::default();
-    // or, if you have a display that is not in the list:
-    // let display = RenderTarget::new("/dev/dri/myweirdscreen42");
-
     let mut locations = K3dMesh::new(Geometry{
         vertices: &locs,
         faces: &[],
@@ -88,6 +79,14 @@ async fn main() {
 
     let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
 
+    // this will try the following list of devices and use the 1st that seems to be working:
+    // "/dev/dri/card0",
+    // "/dev/dri/card1",
+    // "/dev/dri/card2",
+    // "/dev/dri/renderD128",
+    // "/dev/dri/renderD129",
+    // If all fail it will panic.
+    // the list can be changed at drm_render_target.rs:23
     let mut engine = K3dengine::new(WIDTH as u16, HEIGHT as u16);
     engine.camera.set_position(Point3::new(0.0, 0.0, -4.0));
     engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
@@ -96,7 +95,6 @@ async fn main() {
     let mut perf = PerformanceCounter::new();
     // perf.only_fps(true);
 
-    // TODO: get Render loop and framebuffer into lib
     println!("Starting render loop ... ");
     loop {
         let fbuf = buffers.swap_framebuffer();
