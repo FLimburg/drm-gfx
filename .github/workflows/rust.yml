@@ -1,6 +1,9 @@
 on: [push, pull_request]
 
 name: rust
+permissions:
+  actions: read # Read workflow data
+  contents: read # Read repository contents
 
 jobs:
   check:
@@ -49,4 +52,4 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --all-features
+      - run: WIDTH=400 HEIGHT=300 cargo test --all-features

@@ -84,6 +84,12 @@ impl<const W: usize, const H: usize> OriginDimensions for DmaReadyFramebuffer<W,
     }
 }
 
+// Add at the end of framebuffer.rs
+// SAFETY: The raw pointer is only used to access memory owned by RenderTarget,
+// which lives for the entire duration of the program. Access is synchronized
+// via mutex in DoubleBuffer.
+unsafe impl<const W: usize, const H: usize> Send for DmaReadyFramebuffer<W, H> {}
+
 #[cfg(test)]
 mod tests {
     use super::*;

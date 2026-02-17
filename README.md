@@ -24,7 +24,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-drm-gfx = "0.1.1"
+drm-gfx = "0.2.0"
 ```
 
 ### features
@@ -33,93 +33,12 @@ use feature tokio-thread to use drm-gfx in a tokio based application
 
 ### Basic Example
 
-```rust
-use drm_gfx::mesh::K3dMesh;
-use drm_gfx::{
-    draw::draw,
-    mesh::Geometry,
-    perfcounter::PerformanceCounter,
-    K3dengine,
-    doublebuffer::DoubleBuffer,
-    drm_render_target::RenderTarget,
-};
-use embedded_graphics::Drawable;
-use embedded_graphics::{
-    geometry::Point,
-    mono_font::{ascii::FONT_6X10, MonoTextStyle},
-    text::Text,
-};
-use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
-use nalgebra::Point3;
-use std::f32::consts::PI;
-use std::ffi::c_void;
+Define WIDTH and HEIGHT of your screen as env variables during compilation, like:
+`WIDTH=800 HEIGHT=600 cargo build -r --features=tokio-threads`
 
-mod locs;
-// TODO: make this run time
-// this needs to fit with the output from display creation
-const WIDTH: usize = 1024;
-const HEIGHT: usize = 600;
+Run the examples:
+`WIDTH=1024 HEIGHT=600 cargo run --example triangles`
 
-
-#[tokio::main]
-async fn main() {
-    println!("Hello, world!");
-    let locs = Vec![[-1,0,0],[1,0,0],[0,1,0]];
-    // card1 is used for the rasperry pi hdmi port
-    let display = RenderTarget::new("/dev/dri/card1");
-
-    let mut locations = K3dMesh::new(Geometry{
-        vertices: &locs,
-        faces: &[],
-        colors: &[],
-        lines: &[],
-        normals: &[],
-    });
-    locations.set_color(Bgr888::CSS_GREEN);
-
-    let mut raw_framebuffer_0 = Box::new([0u32; WIDTH * HEIGHT]);
-    let mut raw_framebuffer_1 = Box::new([0u32; WIDTH * HEIGHT]);
-
-    let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
-        raw_framebuffer_0.as_mut_ptr() as *mut c_void,
-        raw_framebuffer_1.as_mut_ptr() as *mut c_void,
-    );
-
-    buffers.start_thread(display);
-
-    let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
-
-    let mut engine = K3dengine::new(WIDTH as u16, HEIGHT as u16);
-    engine.camera.set_position(Point3::new(0.0, 0.0, -4.0));
-    engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
-    engine.camera.set_fovy(PI / 4.0);
-
-    let mut perf = PerformanceCounter::new();
-    // perf.only_fps(true);
-
-    // TODO: get Render loop and framebuffer into lib
-    println!("Starting render loop ... ");
-    loop {
-        let fbuf = buffers.swap_framebuffer();
-
-        perf.start_of_frame();
-
-        engine.render([&locations], |p| draw(p, fbuf));
-        perf.add_measurement("render");
-
-        Text::new(perf.get_text(), Point::new(20, 20), text_style)
-            .draw(fbuf)
-            .unwrap();
-
-        buffers.send_framebuffer();
-        perf.add_measurement("draw");
-
-        perf.print();
-    }
-
-    println!("all done. Last perf: {}", perf.get_text());
-}
-```
 
 ## Supported Render Modes
 
@@ -147,20 +66,6 @@ perf.start();
 // Perform rendering
 perf.end();
 println!("Rendering took {} ms", perf.elapsed_ms());
-```
-
-## Framebuffer Optimization
-
-For improved performance, the library supports double buffering:
-
-```rust
-use drm_gfx::doublebuffer::DoubleBuffer;
-
-let mut buffer = DoubleBuffer::new(width, height);
-
-// In your render loop:
-buffer.swap();
-let framebuffer = buffer.get_front();
 ```
 
 ## License
