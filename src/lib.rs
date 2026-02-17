@@ -44,10 +44,14 @@ pub struct K3dengine {
     _framebuffer_1: Box<[u32; WIDTH * HEIGHT]>,
 }
 
+impl Default for K3dengine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl K3dengine {
     pub fn new() -> Self {
-        // let (raw_framebuffer_0, raw_framebuffer_1, mut buffers) = K3dengine::create_buffers();
-
         let mut raw_framebuffer_0 = Box::new([0u32; SIZE]);
         let mut raw_framebuffer_1 = Box::new([0u32; SIZE]);
         let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
@@ -55,19 +59,17 @@ impl K3dengine {
             raw_framebuffer_1.as_mut_ptr() as *mut c_void,
         );
 
-        // #[cfg(not(test))]
+        #[cfg(not(test))]
         buffers.start_thread();
 
-        let engine = K3dengine {
+        K3dengine {
             camera: Camera::new(WIDTH as f32 / HEIGHT as f32),
             width: WIDTH as u16,
             height: HEIGHT as u16,
             buffers,
             _framebuffer_0: raw_framebuffer_0,
             _framebuffer_1: raw_framebuffer_1,
-        };
-
-        engine
+        }
     }
 
     pub fn get_current_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<WIDTH, HEIGHT> {
