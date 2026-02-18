@@ -38,7 +38,7 @@ pub struct K3dengine {
     pub camera: Camera,
     width: u16,
     height: u16,
-    buffers: DoubleBuffer<WIDTH, HEIGHT>,
+    buffers: DoubleBuffer,
 }
 
 impl Default for K3dengine {
@@ -56,7 +56,7 @@ impl K3dengine {
         #[cfg(test)]
         let (_width, _height) = (WIDTH, HEIGHT);
 
-        let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(WIDTH, HEIGHT);
+        let mut buffers = DoubleBuffer::new(WIDTH, HEIGHT);
 
         #[cfg(not(test))]
         buffers.start_thread(Some(display));
