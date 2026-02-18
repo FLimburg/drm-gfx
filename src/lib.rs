@@ -36,8 +36,8 @@ pub enum DrawPrimitive {
 
 pub struct K3dengine {
     pub camera: Camera,
-    width: u16,
-    height: u16,
+    width: usize,
+    height: usize,
     buffers: DoubleBuffer,
 }
 
@@ -52,11 +52,12 @@ impl K3dengine {
         #[cfg(not(test))]
         let display = RenderTarget::default();
         #[cfg(not(test))]
-        let (width, height) = display.mode.size();
+        let width = display.mode.size().0 as usize;
+        let height = display.mode.size().1 as usize;
         #[cfg(test)]
         let (width, height) = (WIDTH, HEIGHT);
 
-        let mut buffers = DoubleBuffer::new(width as usize, height as usize);
+        let mut buffers = DoubleBuffer::new(width, height);
 
         #[cfg(not(test))]
         buffers.start_thread(Some(display));
@@ -65,8 +66,8 @@ impl K3dengine {
 
         K3dengine {
             camera: Camera::new(width as f32 / height as f32),
-            width: width as u16,
-            height: height as u16,
+            width,
+            height,
             buffers,
         }
     }

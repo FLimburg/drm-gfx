@@ -1,6 +1,3 @@
-use std::usize;
-
-// use embedded_graphics::prelude::{RgbColor, WebColors};
 use embedded_graphics_core::pixelcolor::raw::RawU24;
 use embedded_graphics_core::{
     draw_target::DrawTarget,
