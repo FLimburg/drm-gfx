@@ -1,6 +1,6 @@
 [package]
 name = "drm-gfx"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
@@ -40,3 +40,8 @@ path = "examples/points.rs"
 [[example]]
 name = "triangles"
 path = "examples/triangles.rs"
+
+[[example]]
+name = "tokio-triangles"
+path = "examples/tokio-triangles.rs"
+features = ["tokio-threads"]

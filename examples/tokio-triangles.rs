@@ -10,6 +10,7 @@ use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
 use nalgebra::Point3;
 use std::f32::consts::PI;
 
+#[cfg(feature = "tokio-threads")]
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
