@@ -1,7 +1,7 @@
-use crate::{
-    drm_render_target::{FramebufferTarget, RenderTarget},
-    framebuffer::DmaReadyFramebuffer,
-};
+#[cfg(not(test))]
+use crate::drm_render_target::FramebufferTarget;
+use crate::drm_render_target::RenderTarget;
+use crate::framebuffer::DmaReadyFramebuffer;
 use log::{debug, error, info, trace};
 use std::sync::{Arc, Mutex};
 
@@ -34,7 +34,7 @@ impl DoubleBuffer {
         }
     }
 
-    pub fn start_thread(&mut self, mut display: Option<RenderTarget>) {
+    pub fn start_thread(&mut self, display: Option<RenderTarget>) {
         debug!("Creating RenderTarget from card");
 
         #[cfg(not(test))]
@@ -79,7 +79,7 @@ impl DoubleBuffer {
                     let _lock = mutex2.lock().unwrap();
 
                     let ptr = ptr as *mut u32;
-                    let slice = std::slice::from_raw_parts_mut(ptr, W * H);
+                    let slice = std::slice::from_raw_parts_mut(ptr, size);
 
                     #[cfg(not(test))]
                     display.eat_framebuffer(slice).unwrap();

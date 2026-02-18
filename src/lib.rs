@@ -1,7 +1,7 @@
+#[cfg(not(test))]
 use crate::drm_render_target::RenderTarget;
 use crate::{doublebuffer::DoubleBuffer, framebuffer::DmaReadyFramebuffer};
 use camera::Camera;
-use const_env::env_item;
 use embedded_graphics_core::pixelcolor::Bgr888;
 use embedded_graphics_core::pixelcolor::RgbColor;
 use mesh::K3dMesh;
@@ -22,10 +22,10 @@ pub mod perfcounter;
 
 // TODO: make this run time
 // this needs to fit with the output from display creation
-#[env_item]
-const WIDTH: usize = 1024;
-#[env_item]
-const HEIGHT: usize = 600;
+#[cfg(test)]
+const WIDTH: usize = 80;
+#[cfg(test)]
+const HEIGHT: usize = 60;
 
 #[derive(Debug)]
 pub enum DrawPrimitive {
@@ -52,11 +52,11 @@ impl K3dengine {
         #[cfg(not(test))]
         let display = RenderTarget::default();
         #[cfg(not(test))]
-        let (_width, _height) = display.mode.size();
+        let (width, height) = display.mode.size();
         #[cfg(test)]
-        let (_width, _height) = (WIDTH, HEIGHT);
+        let (width, height) = (WIDTH, HEIGHT);
 
-        let mut buffers = DoubleBuffer::new(WIDTH, HEIGHT);
+        let mut buffers = DoubleBuffer::new(width as usize, height as usize);
 
         #[cfg(not(test))]
         buffers.start_thread(Some(display));
@@ -64,9 +64,9 @@ impl K3dengine {
         buffers.start_thread(None);
 
         K3dengine {
-            camera: Camera::new(WIDTH as f32 / HEIGHT as f32),
-            width: WIDTH as u16,
-            height: HEIGHT as u16,
+            camera: Camera::new(width as f32 / height as f32),
+            width: width as u16,
+            height: height as u16,
             buffers,
         }
     }
