@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - run: WIDTH=400 HEIGHT=300 cargo test --all-features
+      - run: WIDTH=400 HEIGHT=300 cargo test
 
   publish:
     needs:

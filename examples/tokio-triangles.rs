@@ -10,7 +10,8 @@ use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
 use nalgebra::Point3;
 use std::f32::consts::PI;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
     let points = vec![[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
     let faces = vec![[0, 1, 2]];
@@ -55,7 +56,7 @@ fn main() {
             .draw(fbuf)
             .unwrap();
 
-        engine.send_framebuffer();
+        engine.send_framebuffer().await;
         perf.add_measurement("draw");
 
         perf.print();

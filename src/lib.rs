@@ -1,3 +1,4 @@
+use crate::drm_render_target::RenderTarget;
 use crate::{doublebuffer::DoubleBuffer, framebuffer::DmaReadyFramebuffer};
 use camera::Camera;
 use const_env::env_item;
@@ -9,7 +10,6 @@ use nalgebra::Matrix4;
 use nalgebra::Point2;
 use nalgebra::Point3;
 use nalgebra::Vector3;
-use std::ffi::c_void;
 
 pub mod camera;
 mod card;
@@ -26,7 +26,6 @@ pub mod perfcounter;
 const WIDTH: usize = 1024;
 #[env_item]
 const HEIGHT: usize = 600;
-const SIZE: usize = WIDTH * HEIGHT;
 
 #[derive(Debug)]
 pub enum DrawPrimitive {
@@ -40,8 +39,6 @@ pub struct K3dengine {
     width: u16,
     height: u16,
     buffers: DoubleBuffer<WIDTH, HEIGHT>,
-    _framebuffer_0: Box<[u32; WIDTH * HEIGHT]>,
-    _framebuffer_1: Box<[u32; WIDTH * HEIGHT]>,
 }
 
 impl Default for K3dengine {
@@ -52,40 +49,42 @@ impl Default for K3dengine {
 
 impl K3dengine {
     pub fn new() -> Self {
-        let mut raw_framebuffer_0 = Box::new([0u32; SIZE]);
-        let mut raw_framebuffer_1 = Box::new([0u32; SIZE]);
-        let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(
-            raw_framebuffer_0.as_mut_ptr() as *mut c_void,
-            raw_framebuffer_1.as_mut_ptr() as *mut c_void,
-        );
+        #[cfg(not(test))]
+        let display = RenderTarget::default();
+        #[cfg(not(test))]
+        let (_width, _height) = display.mode.size();
+        #[cfg(test)]
+        let (_width, _height) = (WIDTH, HEIGHT);
+
+        let mut buffers = DoubleBuffer::<WIDTH, HEIGHT>::new(WIDTH, HEIGHT);
 
         #[cfg(not(test))]
-        buffers.start_thread();
+        buffers.start_thread(Some(display));
+        #[cfg(test)]
+        buffers.start_thread(None);
 
         K3dengine {
             camera: Camera::new(WIDTH as f32 / HEIGHT as f32),
             width: WIDTH as u16,
             height: HEIGHT as u16,
             buffers,
-            _framebuffer_0: raw_framebuffer_0,
-            _framebuffer_1: raw_framebuffer_1,
         }
     }
 
-    pub fn get_current_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<WIDTH, HEIGHT> {
+    pub fn get_current_framebuffer(&mut self) -> &mut DmaReadyFramebuffer {
         self.buffers.get_current_framebuffer()
     }
 
-    pub fn swap_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<WIDTH, HEIGHT> {
+    pub fn swap_framebuffer(&mut self) -> &mut DmaReadyFramebuffer {
         self.buffers.swap_framebuffer()
     }
 
-    #[cfg(not(feature = "tokio"))]
+    #[cfg(not(feature = "tokio-threads"))]
     pub fn send_framebuffer(&mut self) {
         self.buffers.send_framebuffer();
     }
 
-    #[cfg(feature = "tokio")]
+    #[cfg(feature = "tokio-threads")]
     pub async fn send_framebuffer(&mut self) {
         self.buffers.send_framebuffer().await;
     }

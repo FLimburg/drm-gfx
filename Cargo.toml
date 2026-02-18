@@ -8,7 +8,7 @@ authors = ["Florian Limburg"]
 description = "3D graphics rendering for direct rendering manager with optional tokio thread support"
 repository = "https://github.com/FLimburg/drm-gfx"
 keywords = ["3dfx", "graphics", "drm"]
-autoexamples = true
+autoexamples = false
 
 [lib]
 name = "drm_gfx"
@@ -29,3 +29,15 @@ tokio-threads = ["tokio"]
 
 [dev-dependencies]
 approx = "0.5.1"
+
+[[example]]
+name = "lines"
+path = "examples/lines.rs"
+
+[[example]]
+name = "points"
+path = "examples/points.rs"
+
+[[example]]
+name = "triangles"
+path = "examples/triangles.rs"

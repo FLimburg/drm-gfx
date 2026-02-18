@@ -3,28 +3,25 @@ use crate::{
     framebuffer::DmaReadyFramebuffer,
 };
 use log::{debug, error, info, trace};
-use std::{
-    ffi::c_void,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 pub struct DoubleBuffer<const W: usize, const H: usize> {
-    #[cfg(not(feature = "tokio"))]
+    #[cfg(not(feature = "tokio-threads"))]
     sender: Option<std::sync::mpsc::Sender<usize>>,
-    #[cfg(feature = "tokio")]
+    #[cfg(feature = "tokio-threads")]
     sender: Option<tokio::sync::mpsc::Sender<usize>>,
     toggle: bool,
-    fbuf0: DmaReadyFramebuffer<W, H>,
-    fbuf1: DmaReadyFramebuffer<W, H>,
+    fbuf0: DmaReadyFramebuffer,
+    fbuf1: DmaReadyFramebuffer,
     mutex: Arc<Mutex<bool>>,
 }
 
 impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
-    pub fn new(raw_framebuffer_0: *mut c_void, raw_framebuffer_1: *mut c_void) -> Self {
+    pub fn new(width: usize, height: usize) -> Self {
         trace!("Creating new DoubleBuffer with raw framebuffers");
 
-        let fbuf0 = DmaReadyFramebuffer::<W, H>::new(raw_framebuffer_0, true);
-        let fbuf1 = DmaReadyFramebuffer::<W, H>::new(raw_framebuffer_1, true);
+        let fbuf0 = DmaReadyFramebuffer::new(width, height, true);
+        let fbuf1 = DmaReadyFramebuffer::new(width, height, true);
 
         Self {
             sender: None,
@@ -35,20 +32,22 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
     }
 
-    pub fn start_thread(&mut self) {
+    pub fn start_thread(&mut self, mut display: Option<RenderTarget>) {
         debug!("Creating RenderTarget from card");
-        let mut display = RenderTarget::default();
+
+        #[cfg(not(test))]
+        let mut display = display.unwrap();
 
         info!("Starting fb writer thread");
-        #[cfg(not(feature = "tokio"))]
+        #[cfg(not(feature = "tokio-threads"))]
         let (send, receive) = std::sync::mpsc::channel();
-        #[cfg(feature = "tokio")]
+        #[cfg(feature = "tokio-threads")]
         let (send, mut receive) = tokio::sync::mpsc::channel(16);
 
         self.sender = Some(send);
         let mutex2 = self.mutex.clone();
 
-        #[cfg(not(feature = "tokio"))]
+        #[cfg(not(feature = "tokio-threads"))]
         std::thread::spawn(move || {
             trace!("Framebuffer writer thread started for std runtime");
             loop {
@@ -60,13 +59,14 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
                     let ptr = ptr as *mut u32;
                     let slice = std::slice::from_raw_parts_mut(ptr, W * H);
 
+                    #[cfg(not(test))]
                     display.eat_framebuffer(slice).unwrap();
                     slice.fill(0); // 2.2ms
                 };
             }
         });
 
-        #[cfg(feature = "tokio")]
+        #[cfg(feature = "tokio-threads")]
         tokio::spawn(async move {
             trace!("Framebuffer writer thread started for tokio runtime");
             loop {
@@ -78,6 +78,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
                     let ptr = ptr as *mut u32;
                     let slice = std::slice::from_raw_parts_mut(ptr, W * H);
 
+                    #[cfg(not(test))]
                     display.eat_framebuffer(slice).unwrap();
                     slice.fill(0); // 2.2ms
                 };
@@ -85,7 +86,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         });
     }
 
-    pub fn swap_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<W, H> {
+    pub fn swap_framebuffer(&mut self) -> &mut DmaReadyFramebuffer {
         trace!("Swapping framebuffer from {}", self.toggle);
         self.toggle = !self.toggle;
 
@@ -96,7 +97,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
     }
 
-    pub fn get_current_framebuffer(&mut self) -> &mut DmaReadyFramebuffer<W, H> {
+    pub fn get_current_framebuffer(&mut self) -> &mut DmaReadyFramebuffer {
         if self.toggle {
             &mut self.fbuf0
         } else {
@@ -104,7 +105,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
     }
 
-    #[cfg(not(feature = "tokio"))]
+    #[cfg(not(feature = "tokio-threads"))]
     pub fn send_framebuffer(&mut self) {
         {
             let _lock = self.mutex.lock().unwrap();
@@ -113,21 +114,21 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
 
         let fbuf = if self.toggle {
             trace!(
-                "sending framebuffer 0 ({})",
-                self.fbuf0.framebuffer as usize
+                "sending framebuffer 0 ({:?})",
+                self.fbuf0.framebuffer.as_ptr()
             );
             &mut self.fbuf0
         } else {
             trace!(
-                "sending framebuffer 1 ({})",
-                self.fbuf1.framebuffer as usize
+                "sending framebuffer 1 ({:?})",
+                self.fbuf1.framebuffer.as_ptr()
             );
             &mut self.fbuf1
         };
 
         if let Some(sender) = &self.sender {
             sender
-                .send(fbuf.framebuffer as usize)
+                .send(fbuf.framebuffer.as_ptr() as usize)
                 .inspect_err(|msg| {
                     error!("Failed to send framebuffer: {msg}");
                 })
@@ -135,7 +136,7 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
         }
     }
 
-    #[cfg(feature = "tokio")]
+    #[cfg(feature = "tokio-threads")]
     pub async fn send_framebuffer(&mut self) {
         trace!("Sending framebuffer in async context");
         {
@@ -145,21 +146,21 @@ impl<const W: usize, const H: usize> DoubleBuffer<W, H> {
 
         let fbuf = if self.toggle {
             trace!(
-                "sending framebuffer 0 ({})",
-                self.fbuf0.framebuffer as usize
+                "sending framebuffer 0 ({:?})",
+                self.fbuf0.framebuffer.as_ptr()
             );
             &mut self.fbuf0
         } else {
             trace!(
-                "sending framebuffer 1 ({})",
-                self.fbuf1.framebuffer as usize
+                "sending framebuffer 1 ({:?})",
+                self.fbuf1.framebuffer.as_ptr()
             );
             &mut self.fbuf1
         };
 
         if let Some(sender) = &self.sender {
             sender
-                .send(fbuf.framebuffer as usize)
+                .send(fbuf.framebuffer.as_ptr() as usize)
                 .await
                 .inspect_err(|msg| {
                     error!("Failed to send framebuffer: {}", msg);
@@ -178,19 +179,20 @@ unsafe impl<const W: usize, const H: usize> Send for DoubleBuffer<W, H> {}
 
 #[cfg(test)]
 mod tests {
+    use embedded_graphics::prelude::RgbColor;
+
     use super::*;
-    use std::ffi::c_void;
-    use std::mem::MaybeUninit;
+    // use std::mem::MaybeUninit;
 
     // Note: We considered creating a MockRenderTarget for testing, but since we're not
     // testing the start_thread and send_framebuffer functionality directly (due to
     // the complexity of testing threads and channels), we've removed it to avoid unused code.
 
     // Helper to create a safe test buffer
-    fn create_test_buffer<const W: usize, const H: usize>() -> Box<[[u32; W]; H]> {
-        let buffer = Box::new(unsafe { MaybeUninit::<[[u32; W]; H]>::zeroed().assume_init() });
-        buffer
-    }
+    // fn create_test_buffer<const W: usize, const H: usize>() -> Box<[[u32; W]; H]> {
+    //     let buffer = Box::new(unsafe { MaybeUninit::<[[u32; W]; H]>::zeroed().assume_init() });
+    //     buffer
+    // }
 
     #[test]
     fn test_doublebuffer_creation() {
@@ -198,15 +200,15 @@ mod tests {
         const HEIGHT: usize = 64;
 
         // Create safe test buffers
-        let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
-        let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
+        // let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
+        // let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
 
-        // Get raw pointers
-        let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
-        let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
+        // // Get raw pointers
+        // let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
+        // let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
 
         // Create doublebuffer
-        let db = DoubleBuffer::<WIDTH, HEIGHT>::new(raw_ptr1, raw_ptr2);
+        let db = DoubleBuffer::<WIDTH, HEIGHT>::new(WIDTH, HEIGHT);
 
         // Test initial state
         assert!(!db.toggle); // Should start with toggle = false
@@ -218,16 +220,8 @@ mod tests {
         const WIDTH: usize = 64;
         const HEIGHT: usize = 64;
 
-        // Create safe test buffers
-        let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
-        let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
-
-        // Get raw pointers
-        let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
-        let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
-
         // Create doublebuffer
-        let mut db = DoubleBuffer::<WIDTH, HEIGHT>::new(raw_ptr1, raw_ptr2);
+        let mut db = DoubleBuffer::<WIDTH, HEIGHT>::new(WIDTH, HEIGHT);
 
         // Initial toggle is false, so swap should make it true
         let fb1 = db.swap_framebuffer();
@@ -243,15 +237,13 @@ mod tests {
         let fb2 = db.swap_framebuffer();
 
         // Check buffer contents using as_slice
-        let fb2_slice = fb2.as_slice();
-        assert_eq!(fb2_slice[0], 0); // Second buffer should be empty
+        assert_eq!(fb2.get_pixel(Point { x: 0, y: 0 }), Some(Bgr888::BLACK)); // Second buffer should be empty
 
         // Swap again, should get back to the first buffer with our pixel set
         let fb3 = db.swap_framebuffer();
 
         // First pixel in first buffer should be white
-        let fb3_slice = fb3.as_slice();
-        assert_ne!(fb3_slice[0], 0); // Should contain our white pixel
+        assert_eq!(fb3.get_pixel(Point { x: 0, y: 0 }), Some(Bgr888::WHITE)); // Should contain our white pixel
     }
 
     // We can't easily test start_thread and send_framebuffer without mocking the RenderTarget trait
@@ -266,16 +258,16 @@ mod tests {
         const WIDTH: usize = 64;
         const HEIGHT: usize = 64;
 
-        // Create safe test buffers
-        let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
-        let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
+        // // Create safe test buffers
+        // let buffer1 = create_test_buffer::<WIDTH, HEIGHT>();
+        // let buffer2 = create_test_buffer::<WIDTH, HEIGHT>();
 
-        // Get raw pointers
-        let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
-        let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
+        // // Get raw pointers
+        // let raw_ptr1 = buffer1.as_ptr() as *mut c_void;
+        // let raw_ptr2 = buffer2.as_ptr() as *mut c_void;
 
         // Create doublebuffer
-        let mut db = DoubleBuffer::<WIDTH, HEIGHT>::new(raw_ptr1, raw_ptr2);
+        let mut db = DoubleBuffer::<WIDTH, HEIGHT>::new(WIDTH, HEIGHT);
 
         // Track initial value - should be false
         let initial_toggle = db.toggle;
