@@ -44,5 +44,5 @@ path = "examples/triangles.rs"
 [[example]]
 name = "tokio-triangles"
 path = "examples/tokio-triangles.rs"
-features = ["tokio-threads"]
+required-features = ["tokio-threads"]
 test = false
