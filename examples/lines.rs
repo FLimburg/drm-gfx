@@ -10,7 +10,6 @@ use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
 use nalgebra::Point3;
 use std::f32::consts::PI;
 
-// #[tokio::main]
 fn main() {
     println!("Hello, world!");
     let points = vec![

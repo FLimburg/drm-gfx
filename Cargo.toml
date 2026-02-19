@@ -45,3 +45,4 @@ path = "examples/triangles.rs"
 name = "tokio-triangles"
 path = "examples/tokio-triangles.rs"
 features = ["tokio-threads"]
+test = false

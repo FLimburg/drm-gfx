@@ -1,9 +1,12 @@
 #[cfg(not(test))]
-use crate::drm_render_target::FramebufferTarget;
-use crate::drm_render_target::RenderTarget;
+use crate::drm_render_target::{FramebufferTarget, RenderTarget};
 use crate::framebuffer::DmaReadyFramebuffer;
 use log::{debug, error, info, trace};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+#[cfg(not(feature = "tokio-threads"))]
+use std::sync::Mutex;
+#[cfg(feature = "tokio-threads")]
+use tokio::sync::Mutex;
 
 pub struct DoubleBuffer {
     #[cfg(not(feature = "tokio-threads"))]
@@ -34,11 +37,8 @@ impl DoubleBuffer {
         }
     }
 
-    pub fn start_thread(&mut self, display: Option<RenderTarget>) {
+    pub fn start_thread(&mut self, #[cfg(not(test))] mut display: RenderTarget) {
         debug!("Creating RenderTarget from card");
-
-        #[cfg(not(test))]
-        let mut display = display.unwrap();
 
         info!("Starting fb writer thread");
         #[cfg(not(feature = "tokio-threads"))]
@@ -76,7 +76,7 @@ impl DoubleBuffer {
                 let ptr = receive.recv().await.unwrap();
                 trace!("Received framebuffer pointer: {}", ptr);
                 unsafe {
-                    let _lock = mutex2.lock().unwrap();
+                    let _lock = mutex2.lock().await;
 
                     let ptr = ptr as *mut u32;
                     let slice = std::slice::from_raw_parts_mut(ptr, size);
@@ -143,7 +143,7 @@ impl DoubleBuffer {
     pub async fn send_framebuffer(&mut self) {
         trace!("Sending framebuffer in async context");
         {
-            let _lock = self.mutex.lock().unwrap();
+            let _lock = self.mutex.lock().await;
             std::mem::drop(_lock);
         }
 
