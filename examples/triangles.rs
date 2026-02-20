@@ -11,7 +11,8 @@ use nalgebra::Point3;
 use std::f32::consts::PI;
 
 fn main() {
-    println!("Hello, world!");
+    println!("drm-gfx example: triangles");
+    println!("Drawing a green triangle on screen");
     let points = vec![[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
     let faces = vec![[0, 1, 2]];
 
@@ -28,7 +29,7 @@ fn main() {
     let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
 
     let mut engine = K3dengine::new();
-    engine.camera.set_position(Point3::new(0.0, 0.0, -4.0));
+    engine.camera.set_position(Point3::new(0.0, 0.0, 4.0));
     engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
     engine.camera.set_fovy(PI / 4.0);
 

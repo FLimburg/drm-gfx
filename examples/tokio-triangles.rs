@@ -13,7 +13,8 @@ use std::f32::consts::PI;
 #[cfg(feature = "tokio-threads")]
 #[tokio::main]
 async fn main() {
-    println!("Hello, world!");
+    println!("drm-gfx example: tokio-triangles");
+    println!("Drawing a green triangle on screen, using tokio runtime");
     let points = vec![[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
     let faces = vec![[0, 1, 2]];
 
@@ -30,7 +31,7 @@ async fn main() {
     let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
 
     let mut engine = K3dengine::new();
-    engine.camera.set_position(Point3::new(0.0, 0.0, -4.0));
+    engine.camera.set_position(Point3::new(0.0, 0.0, 4.0));
     engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
     engine.camera.set_fovy(PI / 4.0);
 

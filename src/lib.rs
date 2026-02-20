@@ -4,6 +4,7 @@ use crate::{doublebuffer::DoubleBuffer, framebuffer::DmaReadyFramebuffer};
 use camera::Camera;
 use embedded_graphics_core::pixelcolor::Bgr888;
 use embedded_graphics_core::pixelcolor::RgbColor;
+use log::trace;
 use mesh::K3dMesh;
 use mesh::RenderMode;
 use nalgebra::Matrix4;
@@ -137,6 +138,7 @@ impl K3dengine {
             }
 
             let transform_matrix = self.camera.vp_matrix * mesh.model_matrix;
+            trace!("rendering {:?}", mesh.render_mode);
 
             match mesh.render_mode {
                 RenderMode::Points => {
@@ -146,35 +148,55 @@ impl K3dengine {
                         .iter()
                         .filter_map(|v| self.transform_point(v, transform_matrix));
 
-                    if mesh.geometry.colors.len() == mesh.geometry.vertices.len() {
-                        for (point, color) in screen_space_points.zip(mesh.geometry.colors) {
-                            callback(DrawPrimitive::ColoredPoint(point.xy(), *color));
-                        }
-                    } else {
+                    if mesh.geometry.colors.is_empty() {
                         for point in screen_space_points {
                             callback(DrawPrimitive::ColoredPoint(point.xy(), mesh.color));
+                        }
+                    } else {
+                        for (point, color) in screen_space_points.zip(mesh.geometry.colors) {
+                            callback(DrawPrimitive::ColoredPoint(point.xy(), *color));
                         }
                     }
                 }
 
                 RenderMode::Lines if !mesh.geometry.lines.is_empty() => {
-                    for line in mesh.geometry.lines {
+                    let mut line_draw = |line: &[usize; 2], color: &Bgr888| {
                         if let Some([p1, p2]) =
                             self.transform_points(line, mesh.geometry.vertices, transform_matrix)
                         {
-                            callback(DrawPrimitive::Line([p1.xy(), p2.xy()], mesh.color));
+                            callback(DrawPrimitive::Line([p1.xy(), p2.xy()], *color));
+                        }
+                    };
+
+                    if mesh.geometry.colors.is_empty() {
+                        for line in mesh.geometry.lines {
+                            line_draw(line, &mesh.color)
+                        }
+                    } else {
+                        for (line, color) in mesh.geometry.lines.iter().zip(mesh.geometry.colors) {
+                            line_draw(line, color)
                         }
                     }
                 }
 
                 RenderMode::Lines if !mesh.geometry.faces.is_empty() => {
-                    for face in mesh.geometry.faces {
+                    let mut line_draw = |face: &[usize; 3], color: &Bgr888| {
                         if let Some([p1, p2, p3]) =
                             self.transform_points(face, mesh.geometry.vertices, transform_matrix)
                         {
-                            callback(DrawPrimitive::Line([p1.xy(), p2.xy()], mesh.color));
-                            callback(DrawPrimitive::Line([p2.xy(), p3.xy()], mesh.color));
-                            callback(DrawPrimitive::Line([p3.xy(), p1.xy()], mesh.color));
+                            callback(DrawPrimitive::Line([p1.xy(), p2.xy()], *color));
+                            callback(DrawPrimitive::Line([p2.xy(), p3.xy()], *color));
+                            callback(DrawPrimitive::Line([p3.xy(), p1.xy()], *color));
+                        }
+                    };
+
+                    if mesh.geometry.colors.is_empty() {
+                        for face in mesh.geometry.faces {
+                            line_draw(face, &mesh.color);
+                        }
+                    } else {
+                        for (face, color) in mesh.geometry.faces.iter().zip(mesh.geometry.colors) {
+                            line_draw(face, color);
                         }
                     }
                 }
@@ -182,77 +204,111 @@ impl K3dengine {
                 RenderMode::Lines => {}
 
                 RenderMode::SolidLightDir(direction) => {
-                    for (face, normal) in mesh.geometry.faces.iter().zip(mesh.geometry.normals) {
-                        //Backface culling
-                        let normal = Vector3::new(normal[0], normal[1], normal[2]);
-
-                        let transformed_normal = mesh.model_matrix.transform_vector(&normal);
-
-                        if self.camera.get_direction().dot(&transformed_normal) < 0.0 {
-                            continue;
-                        }
-
-                        if let Some([p1, p2, p3]) =
-                            self.transform_points(face, mesh.geometry.vertices, transform_matrix)
-                        {
-                            let color_as_float = Vector3::new(
-                                mesh.color.r() as f32 / 32.0,
-                                mesh.color.g() as f32 / 64.0,
-                                mesh.color.b() as f32 / 32.0,
-                            );
-
-                            let mut final_color = Vector3::new(0.0f32, 0.0, 0.0);
-
-                            let intensity = transformed_normal.dot(&direction);
-
-                            let intensity = intensity.max(0.0);
-
-                            final_color += color_as_float * intensity + color_as_float * 0.4;
-
-                            let final_color = Vector3::new(
-                                final_color.x.clamp(0.0, 1.0),
-                                final_color.y.clamp(0.0, 1.0),
-                                final_color.z.clamp(0.0, 1.0),
-                            );
-
-                            let color = Bgr888::new(
-                                (final_color.x * 31.0) as u8,
-                                (final_color.y * 63.0) as u8,
-                                (final_color.z * 31.0) as u8,
-                            );
-                            callback(DrawPrimitive::ColoredTriangle(
-                                [p1.xy(), p2.xy(), p3.xy()],
-                                color,
-                            ));
-                        }
-                    }
-                }
-
-                RenderMode::Solid => {
-                    if mesh.geometry.normals.is_empty() {
-                        for face in mesh.geometry.faces.iter() {
-                            if let Some([p1, p2, p3]) = self.transform_points(
-                                face,
-                                mesh.geometry.vertices,
-                                transform_matrix,
-                            ) {
-                                callback(DrawPrimitive::ColoredTriangle(
-                                    [p1.xy(), p2.xy(), p3.xy()],
-                                    mesh.color,
-                                ));
-                            }
-                        }
-                    } else {
-                        for (face, normal) in mesh.geometry.faces.iter().zip(mesh.geometry.normals)
-                        {
+                    let mut solid_render =
+                        |face: &[usize; 3], normal: &[f32; 3], color: &Bgr888| {
                             //Backface culling
                             let normal = Vector3::new(normal[0], normal[1], normal[2]);
 
                             let transformed_normal = mesh.model_matrix.transform_vector(&normal);
 
-                            if self.camera.get_direction().dot(&transformed_normal) < 0.0 {
-                                continue;
+                            if self.camera.get_direction().dot(&transformed_normal) >= 0.0 {
+                                return;
                             }
+
+                            if let Some([p1, p2, p3]) = self.transform_points(
+                                face,
+                                mesh.geometry.vertices,
+                                transform_matrix,
+                            ) {
+                                let color_as_float = Vector3::new(
+                                    color.r() as f32 / 32.0,
+                                    color.g() as f32 / 64.0,
+                                    color.b() as f32 / 32.0,
+                                );
+
+                                let mut final_color = Vector3::new(0.0f32, 0.0, 0.0);
+
+                                let intensity = transformed_normal.dot(&direction);
+
+                                let intensity = intensity.max(0.0);
+
+                                final_color += color_as_float * intensity + color_as_float * 0.4;
+
+                                let final_color = Vector3::new(
+                                    final_color.x.clamp(0.0, 1.0),
+                                    final_color.y.clamp(0.0, 1.0),
+                                    final_color.z.clamp(0.0, 1.0),
+                                );
+
+                                let color = Bgr888::new(
+                                    (final_color.x * 31.0) as u8,
+                                    (final_color.y * 63.0) as u8,
+                                    (final_color.z * 31.0) as u8,
+                                );
+                                callback(DrawPrimitive::ColoredTriangle(
+                                    [p1.xy(), p2.xy(), p3.xy()],
+                                    color,
+                                ));
+                            };
+                        };
+
+                    if mesh.geometry.colors.is_empty() {
+                        for (face, normal) in mesh.geometry.faces.iter().zip(mesh.geometry.normals)
+                        {
+                            solid_render(face, normal, &mesh.color);
+                        }
+                    } else {
+                        for ((face, normal), color) in mesh
+                            .geometry
+                            .faces
+                            .iter()
+                            .zip(mesh.geometry.normals)
+                            .zip(mesh.geometry.colors)
+                        {
+                            solid_render(face, normal, color);
+                        }
+                    }
+                }
+
+                RenderMode::Solid if mesh.geometry.normals.is_empty() => {
+                    let mut solid_render = |face: &[usize; 3], color: &Bgr888| {
+                        if let Some([p1, p2, p3]) =
+                            self.transform_points(face, mesh.geometry.vertices, transform_matrix)
+                        {
+                            callback(DrawPrimitive::ColoredTriangle(
+                                [p1.xy(), p2.xy(), p3.xy()],
+                                *color,
+                            ));
+                        }
+                    };
+
+                    if mesh.geometry.colors.is_empty() {
+                        for face in mesh.geometry.faces.iter() {
+                            solid_render(face, &mesh.color);
+                        }
+                    } else {
+                        for (face, color) in mesh.geometry.faces.iter().zip(mesh.geometry.colors) {
+                            solid_render(face, color);
+                        }
+                    }
+                }
+
+                RenderMode::Solid => {
+                    let mut solid_render =
+                        |face: &[usize; 3], normal: &[f32; 3], color: &Bgr888| {
+                            //Backface culling
+                            let normal = Vector3::new(normal[0], normal[1], normal[2]);
+                            let transformed_normal = mesh.model_matrix.transform_vector(&normal);
+                            // let bfc = self.camera.get_direction().dot(&transformed_normal);
+                            // trace!(
+                            //     "N: {:?} / TN: {:?} / C: {:?} / A: {:?}",
+                            //     normal, transformed_normal, color, bfc
+                            // );
+                            if self.camera.get_direction().dot(&transformed_normal) >= 0.0 {
+                                // trace!("Culled");
+                                return;
+                            }
+                            // trace!("Rendered");
 
                             if let Some([p1, p2, p3]) = self.transform_points(
                                 face,
@@ -261,9 +317,25 @@ impl K3dengine {
                             ) {
                                 callback(DrawPrimitive::ColoredTriangle(
                                     [p1.xy(), p2.xy(), p3.xy()],
-                                    mesh.color,
+                                    *color,
                                 ));
                             }
+                        };
+
+                    if mesh.geometry.colors.is_empty() {
+                        for (face, normal) in mesh.geometry.faces.iter().zip(mesh.geometry.normals)
+                        {
+                            solid_render(face, normal, &mesh.color);
+                        }
+                    } else {
+                        for ((face, normal), color) in mesh
+                            .geometry
+                            .faces
+                            .iter()
+                            .zip(mesh.geometry.normals)
+                            .zip(mesh.geometry.colors)
+                        {
+                            solid_render(face, normal, color);
                         }
                     }
                 }
@@ -556,7 +628,7 @@ mod tests {
 
         // Create a test mesh with vertex colors
         let vertices = &[[0.0, 0.0, -5.0], [1.0, 0.0, -5.0], [0.0, 1.0, -5.0]];
-        let faces = &[[0, 1, 2]];
+        let faces = &[];
         let red = Bgr888::new(0, 0, 255); // RGB to BGR conversion (red is 0, 0, 255 in BGR)
         let green = Bgr888::new(0, 255, 0); // Green stays the same in BGR
         let blue = Bgr888::new(255, 0, 0); // RGB to BGR conversion (blue is 255, 0, 0 in BGR)

@@ -53,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --example triangles --example lines --example points
+      - run: cargo build --example triangles --example lines --example points --example spinning-cube
       - run: cargo build --features tokio-threads --example tokio-triangles
       - run: cargo test --tests --lib
 
@@ -67,8 +67,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build --lib
       - run: cargo build --lib --features tokio-threads
-      - run: cargo build --example triangles --example lines --example points
+      - run: cargo build --example triangles --example lines --example points --example spinning-cube
       - run: cargo build --features tokio-threads --example tokio-triangles
       - run: cargo build --release --lib
-      - run: cargo build --release --example triangles --example lines --example points
+      - run: cargo build --release --example triangles --example lines --example points --example spinning-cube
       - run: cargo build --release --features tokio-threads --example tokio-triangles

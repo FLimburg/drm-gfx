@@ -28,6 +28,7 @@ tokio-threads = ["tokio"]
 
 [dev-dependencies]
 approx = "0.5.1"
+env_logger = "0.11.8"
 
 [[example]]
 name = "lines"
@@ -40,6 +41,10 @@ path = "examples/points.rs"
 [[example]]
 name = "triangles"
 path = "examples/triangles.rs"
+
+[[example]]
+name = "spinning-cube"
+path = "examples/spinning-cube.rs"
 
 [[example]]
 name = "tokio-triangles"
