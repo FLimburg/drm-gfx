@@ -1,4 +1,4 @@
 # To Do
 ## General
 - tokio tests
-- fix backface culling under rotation artefacts
+- maybe depth buffer to avoid the issues with the spinning cube

@@ -299,16 +299,19 @@ impl K3dengine {
                             //Backface culling
                             let normal = Vector3::new(normal[0], normal[1], normal[2]);
                             let transformed_normal = mesh.model_matrix.transform_vector(&normal);
-                            // let bfc = self.camera.get_direction().dot(&transformed_normal);
-                            // trace!(
-                            //     "N: {:?} / TN: {:?} / C: {:?} / A: {:?}",
-                            //     normal, transformed_normal, color, bfc
-                            // );
+                            let bfc = self.camera.get_direction().dot(&transformed_normal);
+
                             if self.camera.get_direction().dot(&transformed_normal) >= 0.0 {
-                                // trace!("Culled");
+                                trace!(
+                                    "Culled: N: {:?} / TN: {:?} / C: {:?} / A: {:?}",
+                                    normal, transformed_normal, color, bfc
+                                );
                                 return;
                             }
-                            // trace!("Rendered");
+                            trace!(
+                                "Rendered: N: {:?} / TN: {:?} / C: {:?} / A: {:?}",
+                                normal, transformed_normal, color, bfc
+                            );
 
                             if let Some([p1, p2, p3]) = self.transform_points(
                                 face,

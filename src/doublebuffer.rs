@@ -54,18 +54,25 @@ impl DoubleBuffer {
         std::thread::spawn(move || {
             trace!("Framebuffer writer thread started for std runtime");
             loop {
-                let ptr = receive.recv().unwrap();
-                trace!("Received framebuffer pointer: {ptr}");
-                unsafe {
-                    let _lock = mutex2.lock().unwrap();
+                match receive.recv() {
+                    Ok(ptr) => {
+                        trace!("Received framebuffer pointer: {ptr}");
+                        unsafe {
+                            let _lock = mutex2.lock().unwrap();
 
-                    let ptr = ptr as *mut u32;
-                    let slice = std::slice::from_raw_parts_mut(ptr, size);
+                            let ptr = ptr as *mut u32;
+                            let slice = std::slice::from_raw_parts_mut(ptr, size);
 
-                    #[cfg(not(test))]
-                    display.eat_framebuffer(slice).unwrap();
-                    slice.fill(0); // 2.2ms
-                };
+                            #[cfg(not(test))]
+                            display.eat_framebuffer(slice).unwrap();
+                            slice.fill(0); // 2.2ms
+                        };
+                    }
+                    _ => {
+                        debug!("Leaving framebuffer loop");
+                        break;
+                    }
+                }
             }
         });
 
@@ -73,18 +80,25 @@ impl DoubleBuffer {
         tokio::spawn(async move {
             trace!("Framebuffer writer thread started for tokio runtime");
             loop {
-                let ptr = receive.recv().await.unwrap();
-                trace!("Received framebuffer pointer: {}", ptr);
-                unsafe {
-                    let _lock = mutex2.lock().await;
+                match receive.recv().await {
+                    Some(ptr) => {
+                        trace!("Received framebuffer pointer: {}", ptr);
+                        unsafe {
+                            let _lock = mutex2.lock().await;
 
-                    let ptr = ptr as *mut u32;
-                    let slice = std::slice::from_raw_parts_mut(ptr, size);
+                            let ptr = ptr as *mut u32;
+                            let slice = std::slice::from_raw_parts_mut(ptr, size);
 
-                    #[cfg(not(test))]
-                    display.eat_framebuffer(slice).unwrap();
-                    slice.fill(0); // 2.2ms
-                };
+                            #[cfg(not(test))]
+                            display.eat_framebuffer(slice).unwrap();
+                            slice.fill(0); // 2.2ms
+                        };
+                    }
+                    _ => {
+                        debug!("Leaving framebuffer loop");
+                        break;
+                    }
+                }
             }
         });
     }

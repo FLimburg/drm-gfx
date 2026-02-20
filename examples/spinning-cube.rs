@@ -1,3 +1,4 @@
+use console::Term;
 use drm_gfx::mesh::K3dMesh;
 use drm_gfx::{K3dengine, draw::draw, mesh::Geometry, perfcounter::PerformanceCounter};
 use embedded_graphics::Drawable;
@@ -10,11 +11,15 @@ use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
 use log::{debug, info};
 use nalgebra::Point3;
 use std::f32::consts::PI;
+use std::io;
 
-fn main() {
+fn main() -> io::Result<()> {
     env_logger::init();
-    info!("drm-gfx example: spinning-cube");
-    info!("Drawing a coloured spinnign cube on screen");
+    println!("drm-gfx example: spinning-cube");
+    println!("Drawing a 6 colored cube on screen");
+    println!("use w,a,s,d,q,e, to spin it");
+    println!("0 to reset the cube");
+    println!("and X to quit");
     let points = vec![
         [1.0, -1.0, 1.0],   // 0
         [1.0, 1.0, 1.0],    // 1
@@ -120,9 +125,9 @@ fn main() {
 
         let mut primitives = Vec::new();
         // mesh.set_attitude(roll, pitch, yaw);
-        // yaw around x axis
+        // yaw around z axis
         // pitch around y axis
-        // roll around z axis
+        // roll around x axis
         mesh.set_attitude(roll, pitch, yaw);
         engine.render([&mesh], |p| {
             primitives.push(p);
@@ -142,10 +147,30 @@ fn main() {
         engine.send_framebuffer();
         perf.add_measurement("draw");
 
-        roll += 0.01;
-        pitch += 0.01;
-        yaw += 0.01;
+        let c = Term::stdout().read_char();
+        match c {
+            Ok('q') => yaw -= 0.02,
+            Ok('e') => yaw += 0.02,
+            Ok('a') => pitch -= 0.02,
+            Ok('d') => pitch += 0.02,
+            Ok('w') => roll += 0.02,
+            Ok('s') => roll -= 0.02,
+            Ok('0') => {
+                roll = 0.0;
+                yaw = 0.0;
+                pitch = 0.0;
+            }
+            Ok('X') => {
+                info!("Quiting program");
+                break;
+            }
+            _ => {
+                info!("Unregistered key ({c:?}) pressed");
+            }
+        }
+        perf.add_measurement("keyboard input");
 
         perf.print();
     }
+    Ok(())
 }
