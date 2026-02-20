@@ -24,7 +24,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-drm-gfx = "0.2.0"
+drm-gfx = "0.2.1"
 ```
 
 ### features
@@ -33,11 +33,12 @@ use feature tokio-thread to use drm-gfx in a tokio based application
 
 ### Basic Example
 
-Define WIDTH and HEIGHT of your screen as env variables during compilation, like:
-`WIDTH=800 HEIGHT=600 cargo build -r --features=tokio-threads`
+screen resolution will be detected automatically (... it worked on my machine)
+`cargo build -r [--features=tokio-threads]`
 
 Run the examples:
-`WIDTH=1024 HEIGHT=600 cargo run --example triangles`
+`cargo run -r --example triangles`
+`cargo run -r --features tokio-threads --example tokio-triangles`
 
 
 ## Supported Render Modes

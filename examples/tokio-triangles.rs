@@ -10,9 +10,11 @@ use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
 use nalgebra::Point3;
 use std::f32::consts::PI;
 
-fn main() {
-    println!("drm-gfx example: triangles");
-    println!("Drawing a green triangle on screen");
+#[cfg(feature = "tokio-threads")]
+#[tokio::main]
+async fn main() {
+    println!("drm-gfx example: tokio-triangles");
+    println!("Drawing a green triangle on screen, using tokio runtime");
     let points = vec![[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
     let faces = vec![[0, 1, 2]];
 
@@ -56,7 +58,7 @@ fn main() {
             .draw(fbuf)
             .unwrap();
 
-        engine.send_framebuffer();
+        engine.send_framebuffer().await;
         perf.add_measurement("draw");
 
         perf.print();

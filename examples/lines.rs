@@ -7,24 +7,27 @@ use embedded_graphics::{
     text::Text,
 };
 use embedded_graphics_core::pixelcolor::{Bgr888, WebColors};
+use log::{debug, info};
 use nalgebra::Point3;
 use std::f32::consts::PI;
 
-// #[tokio::main]
 fn main() {
-    println!("Hello, world!");
+    env_logger::init();
+    info!("drm-gfx example: lines");
+    info!("Drawing two crossing green/red lines on screen");
     let points = vec![
-        [-1.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [0.0, -1.0, 0.0],
+        [-1.0, 0.0, 1.0],
+        [1.0, 0.0, 1.0],
+        [0.0, 1.0, -1.0],
+        [0.0, -1.0, -1.0],
     ];
+    let colors = vec![Bgr888::new(0, 0, 255), Bgr888::new(0, 255, 0)];
     let lines = vec![[0, 1], [2, 3]];
 
     let mut mesh = K3dMesh::new(Geometry {
         vertices: &points,
         faces: &[],
-        colors: &[],
+        colors: &colors,
         lines: &lines,
         normals: &[],
     });
@@ -34,14 +37,14 @@ fn main() {
     let text_style = MonoTextStyle::new(&FONT_6X10, Bgr888::CSS_WHITE);
 
     let mut engine = K3dengine::new();
-    engine.camera.set_position(Point3::new(0.0, 0.0, -4.0));
+    engine.camera.set_position(Point3::new(0.0, 0.0, 4.0));
     engine.camera.set_target(Point3::new(0.0, 0.0, 0.0));
     engine.camera.set_fovy(PI / 4.0);
 
     let mut perf = PerformanceCounter::new();
     // perf.only_fps(true);
 
-    println!("Starting render loop ... ");
+    debug!("Starting render loop ... ");
     loop {
         perf.start_of_frame();
 

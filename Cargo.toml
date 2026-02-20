@@ -1,6 +1,6 @@
 [package]
 name = "drm-gfx"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
@@ -8,7 +8,7 @@ authors = ["Florian Limburg"]
 description = "3D graphics rendering for direct rendering manager with optional tokio thread support"
 repository = "https://github.com/FLimburg/drm-gfx"
 keywords = ["3dfx", "graphics", "drm"]
-autoexamples = true
+autoexamples = false
 
 [lib]
 name = "drm_gfx"
@@ -16,16 +16,39 @@ path = "src/lib.rs"
 
 [dependencies]
 embedded-graphics = { version = "0.8.2" }
-embedded-graphics-core = { version = "0.4.0" }
+embedded-graphics-core = { version = "0.4.1" }
 log = "0.4.29"
 nalgebra = { version = "0.34.1", default-features = false, features = ["libm"] }
 line_drawing = "1.0.1"
 drm = "0.14.1"
 tokio = { version = "1.49.0", features = ["full"], optional = true }
-const_env = "0.1.5"
 
 [features]
 tokio-threads = ["tokio"]
 
 [dev-dependencies]
 approx = "0.5.1"
+env_logger = "0.11.9"
+console = "0.16.2"
+
+[[example]]
+name = "lines"
+path = "examples/lines.rs"
+
+[[example]]
+name = "points"
+path = "examples/points.rs"
+
+[[example]]
+name = "triangles"
+path = "examples/triangles.rs"
+
+[[example]]
+name = "spinning-cube"
+path = "examples/spinning-cube.rs"
+
+[[example]]
+name = "tokio-triangles"
+path = "examples/tokio-triangles.rs"
+required-features = ["tokio-threads"]
+test = false

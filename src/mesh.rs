@@ -42,8 +42,13 @@ impl Geometry<'_> {
             }
         }
 
-        if !self.colors.is_empty() && self.colors.len() != self.vertices.len() {
-            error!("Colors are not the same length as vertices");
+        if !self.colors.is_empty()
+            && (((self.faces.is_empty() && self.lines.is_empty())
+                && self.colors.len() != self.vertices.len())
+                || (!self.faces.is_empty() && self.colors.len() != self.faces.len())
+                || (!self.lines.is_empty() && self.colors.len() != self.lines.len()))
+        {
+            error!("Colors are not the same length as vertices|faces|lines");
             return false;
         }
 
@@ -146,8 +151,9 @@ mod tests {
     use approx::assert_relative_eq;
     use nalgebra::Vector3;
 
+    #[ignore = "Vertx color interpolation not supported yet"]
     #[test]
-    fn test_geometry_check_validity_valid_data() {
+    fn test_geometry_check_validity_valid_data_0() {
         let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
         let faces = &[[0, 1, 2]];
         let colors = &[Bgr888::CSS_RED, Bgr888::CSS_GREEN, Bgr888::CSS_BLUE];
@@ -163,6 +169,35 @@ mod tests {
         };
 
         assert!(geometry.check_validity());
+    }
+
+    #[test]
+    fn test_geometry_check_validity_valid_data_1() {
+        let vertices = &[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
+        let faces = &[[0, 1, 2]];
+        let colors = &[Bgr888::CSS_RED];
+        let colors_bad = &[Bgr888::CSS_RED, Bgr888::CSS_GREEN, Bgr888::CSS_BLUE];
+        let lines = &[[0, 1]];
+        let normals = &[[0.0, 0.0, 1.0]];
+
+        let geometry = Geometry {
+            vertices,
+            faces,
+            colors,
+            lines,
+            normals,
+        };
+
+        assert!(geometry.check_validity());
+
+        let geometry_bad = Geometry {
+            vertices,
+            faces,
+            colors: colors_bad,
+            lines,
+            normals,
+        };
+        assert!(!geometry_bad.check_validity());
     }
 
     #[test]
