@@ -47,8 +47,8 @@ impl Default for RenderTarget {
 
 impl RenderTarget {
     pub fn new(device: &str) -> Result<Self, std::io::Error> {
-        let card = Card::open_global(device)
-            .inspect_err(|e| error!("failed to open device {device}: {e}"))?;
+        let card =
+            Card::open(device).inspect_err(|e| error!("failed to open device {device}: {e}"))?;
 
         // Load the information.
         let res = card

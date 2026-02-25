@@ -1,3 +1,4 @@
+use console::Term;
 use drm_gfx::mesh::K3dMesh;
 use drm_gfx::{K3dengine, draw::draw, mesh::Geometry, perfcounter::PerformanceCounter};
 use embedded_graphics::Drawable;
@@ -14,8 +15,11 @@ use std::io;
 
 fn main() -> io::Result<()> {
     env_logger::init();
-    info!("drm-gfx example: spinning-cube");
-    info!("Drawing a 6 colored spinning cube on screen");
+    info!("drm-gfx example: spin-the-cube");
+    info!("Drawing a 6 colored cube on screen");
+    info!("use w,a,s,d,q,e, to spin it");
+    info!("0 to reset the cube");
+    info!("and X to quit");
     let points = vec![
         [1.0, -1.0, 1.0],   // 0
         [1.0, 1.0, 1.0],    // 1
@@ -143,12 +147,30 @@ fn main() -> io::Result<()> {
         engine.send_framebuffer();
         perf.add_measurement("draw");
 
-        yaw += 0.02;
-        pitch += 0.02;
-        roll += 0.02;
+        let c = Term::stdout().read_char();
+        match c {
+            Ok('q') => yaw -= 0.02,
+            Ok('e') => yaw += 0.02,
+            Ok('a') => pitch -= 0.02,
+            Ok('d') => pitch += 0.02,
+            Ok('w') => roll += 0.02,
+            Ok('s') => roll -= 0.02,
+            Ok('0') => {
+                roll = 0.0;
+                yaw = 0.0;
+                pitch = 0.0;
+            }
+            Ok('X') => {
+                info!("Quiting program");
+                break;
+            }
+            _ => {
+                info!("Unregistered key ({c:?}) pressed");
+            }
+        }
+        perf.add_measurement("keyboard input");
 
         perf.print();
     }
-    #[allow(unreachable_code)]
     Ok(())
 }

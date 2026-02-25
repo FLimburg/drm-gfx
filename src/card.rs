@@ -1,4 +1,3 @@
-// #![allow(dead_code)]
 use drm::Device;
 use drm::control::Device as ControlDevice;
 
@@ -25,10 +24,6 @@ impl Card {
         options.read(true);
         options.write(true);
         Ok(Card(options.open(path)?))
-    }
-
-    pub fn open_global(device: &str) -> Result<Self, std::io::Error> {
-        Self::open(device)
     }
 }
 
@@ -110,11 +105,11 @@ mod tests {
 
     #[test]
     #[ignore = "This test would attempt to open a real device"]
-    fn test_open_global() {
+    fn test_open() {
         // Test that open_global correctly forwards to open
         // Again, ignored to avoid actual device operations
         let device_path = "/dev/dri/card0";
-        let _ = Card::open_global(device_path);
+        let _ = Card::open(device_path);
     }
 
     #[test]
