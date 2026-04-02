@@ -20,7 +20,7 @@ embedded-graphics-core = { version = "0.4.1" }
 log = "0.4.29"
 nalgebra = { version = "0.34.1", default-features = false, features = ["libm"] }
 line_drawing = "1.0.1"
-drm = "0.14.1"
+drm = "0.15.0"
 tokio = { version = "1.49.0", features = ["full"], optional = true }
 
 [features]
