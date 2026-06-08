@@ -36,7 +36,7 @@ pub fn draw<D: DrawTarget<Color = embedded_graphics_core::pixelcolor::Bgr888>>(
         }
         DrawPrimitive::ColoredTriangle(mut vertices, color) => {
             //sort vertices by y
-            vertices.sort_by(|a, b| a.y.cmp(&b.y));
+            vertices.sort_by_key(|a| a.y);
 
             let [p1, p2, p3] = vertices
                 .iter()
